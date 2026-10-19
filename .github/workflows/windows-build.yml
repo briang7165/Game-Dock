@@ -1,0 +1,44 @@
+name: Windows build
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: launcher/src-tauri
+      - name: Build frontend
+        working-directory: launcher
+        run: |
+          npm install
+          npm run build
+      - name: Test Rust backend
+        working-directory: launcher/src-tauri
+        run: cargo test
+      - name: Compile Harbor Test
+        run: rustc --edition 2021 -O samples/harbor-test/main.rs -o HarborTest.exe
+      - name: Package NSIS setup
+        working-directory: launcher
+        run: npm run tauri build
+      - name: Attach Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-dock-windows-setup
+          path: launcher/src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
+          retention-days: 7

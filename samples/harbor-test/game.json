@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "id": "harbor-test",
+  "name": "Harbor Test",
+  "version": "0.1.0",
+  "genre": "Utility",
+  "description": "Benign standalone Windows program that confirms native game launch.",
+  "executable": "HarborTest.exe"
+}

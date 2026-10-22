@@ -18,7 +18,7 @@ No additional account or subscription is needed to run the installed application
 
 - **Game Dock:** Tauri 2 native shell; Rust file/process backend; React/TypeScript interface.
 - **Harbor Test:** a tiny separate Windows executable to check launches; not a game.
-- **Broadside:** approved pirate naval combat design; standalone Godot project to be built in stages, with first Codex PR limited to working combat.
+- **Broadside:** [playable M1 Godot combat prototype](games/broadside/README.md), awaiting hands-on review; standalone one-on-one keyboard naval combat. Shipyard/progression and final art remain later milestones.
 
 ## Broadside design and Codex task
 

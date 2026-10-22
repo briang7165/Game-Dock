@@ -2,7 +2,7 @@
 
 A local-first Windows desktop game library and launcher built with **Tauri 2, Rust, React and TypeScript**. Games remain separate, runnable executables: the launcher does not depend on a particular game engine.
 
-**Current phase: v0.1 development scaffold.** First Windows build and native game launch require verification. No store, updater, or completed pirate game is claimed.
+**Current phase: v0.1 development launcher.** GitHub Windows build passed and the Tauri development application was launched successfully on Windows on 2026-10-22. Standalone Harbor Test/installed launcher integration still needs hands-on verification. No store, updater, or completed pirate game is claimed.
 
 ## Start on Windows
 
@@ -18,7 +18,14 @@ No additional account or subscription is needed to run the installed application
 
 - **Game Dock:** Tauri 2 native shell; Rust file/process backend; React/TypeScript interface.
 - **Harbor Test:** a tiny separate Windows executable to check launches; not a game.
-- **Broadside:** pirate naval game planned for a future independent Godot project.
+- **Broadside:** approved pirate naval combat design; standalone Godot project to be built in stages, with first Codex PR limited to working combat.
+
+## Broadside design and Codex task
+
+- [Approved Broadside game specification](docs/BROADSIDE_DESIGN_DRAFT.md) — painterly top-down arcade-tactical pirate combat; WASD/arrows, Space broadside firing, automatic reload, Esc pause, mouse only in menus; rocky islands; sloop-to-galleon purchase progression.
+- [Codex implementation task book](docs/CODEX_BROADSIDE_BUILD.md) — PR1 playable combat, PR2 shipyard/progression, PR3 art and release.
+- [GitHub Issue #3](https://github.com/briang7165/Game-Dock/issues/3) — implementation tracker.
+- [AGENTS.md](AGENTS.md) — repository instructions for coding agents.
 
 ## Releasing
 

@@ -11,6 +11,10 @@ This repository contains the **Tauri/Rust/React Game Dock launcher** and indepen
 - Report exact tool versions, commands, tests run, and unverified steps. Do not claim native Windows execution based on a headless build.
 - Do not overwrite unexpected local changes; inspect the repository first.
 
+## Current priority: Broadside M1.2
+
+Read `docs/BROADSIDE_M12_FEEDBACK.md` for the latest user-requested refinement. The starter sloop has **one cannon on each broadside**, future shipyard upgrades add guns; game HUD has a **bottom-anchored hull-health bar and two independent cannon reload bars**; substantial rocky-island impacts cause crash damage, and ship-on-ship rams cause damage to **both** ships with impact-speed thresholds and safeguards against per-frame repeat damage. Update the existing Broadside PR #4 if still open, and do not implement the full economy yet.
+
 ## Active Broadside design contract
 For any work under games/broadside:
 1. Read docs/BROADSIDE_DESIGN_DRAFT.md (approved design v1.0) and docs/CODEX_BROADSIDE_BUILD.md, plus GitHub issue #3.

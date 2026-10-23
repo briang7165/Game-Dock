@@ -14,15 +14,20 @@ func _physics_process(delta: float) -> void:
 		position = hit.position
 		if hit.collider is BroadsideShip:
 			hit.collider.take_damage(stats.damage)
+			get_parent().sound("wood", position)
+		else:
+			get_parent().sound("rock", position)
 		get_parent().effect(position, Color("d6bb86"), 18.0)
 		queue_free()
 		return
 	position = destination
 	if age >= stats.projectile_lifetime:
+		get_parent().sound("splash", position)
 		get_parent().effect(position, Color("a1d7cf"), 22.0)
 		queue_free()
 	queue_redraw()
 
 func _draw() -> void:
-	draw_line(-direction * 14.0, Vector2.ZERO, Color(0.95,0.83,0.56,0.65), 3.0, true)
-	draw_circle(Vector2.ZERO, 4.0, Color("ffe0a0"))
+	draw_line(-direction * 22.0, Vector2.ZERO, Color(0.95,0.83,0.56,0.75), 4.0, true)
+	draw_circle(Vector2.ZERO, 7.0, Color("21333b"))
+	draw_circle(Vector2.ZERO, 5.0, Color("ffe8ae"))

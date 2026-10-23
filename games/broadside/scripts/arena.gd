@@ -4,6 +4,8 @@ var player: BroadsideShip
 var enemy: BroadsideShip
 var finished: bool = false
 var camera: Camera2D
+var audio: Node
+@export var encounter: EncounterStats = preload("res://data/encounter.tres")
 
 func _ready() -> void:
 	for location: Vector2 in [Vector2(-420,-230),Vector2(120,210),Vector2(570,-280)]:
@@ -30,9 +32,11 @@ func _ready() -> void:
 	enemy.arena = self
 	enemy.target = player
 	add_child(enemy)
+	enemy.add_to_group("hostile_ships")
 	player.sunk.connect(_ship_sunk)
 	enemy.sunk.connect(_ship_sunk)
 	camera = Camera2D.new()
+	camera.zoom = Vector2.ONE * encounter.camera_zoom
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 4.0
 	camera.limit_left = -1200
@@ -42,6 +46,7 @@ func _ready() -> void:
 	player.add_child(camera)
 
 func _ship_sunk(ship: BroadsideShip) -> void:
+	sound("sink", ship.global_position)
 	effect(ship.position,Color("d4d5bc"),70.0)
 	if finished:
 		return
@@ -54,6 +59,10 @@ func _ship_sunk(ship: BroadsideShip) -> void:
 	sinking.tween_property(ship, "modulate:a", 0.0, 0.75)
 	sinking.tween_property(ship, "rotation", ship.rotation + 0.4, 0.75)
 	sinking.chain().tween_callback(func() -> void: battle_ended.emit(ship == enemy))
+
+func sound(kind: String, at: Vector2) -> void:
+	if is_instance_valid(audio):
+		audio.play_effect(kind, clampf(1.0 - player.global_position.distance_to(at) / 1600.0, 0.2, 1.0))
 
 func effect(at: Vector2, color: Color, size: float) -> void:
 	var burst := Node2D.new()

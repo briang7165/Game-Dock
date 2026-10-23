@@ -18,8 +18,8 @@ func _physics_process(delta: float) -> void:
 		var b: float = a + PI
 		desired = a if absf(angle_difference(rotation, a)) < absf(angle_difference(rotation, b)) else b
 	var heading: Vector2 = Vector2.UP.rotated(rotation)
-	var ahead: Dictionary = ray(position, position + heading * 150.0, 1)
-	var throttle: float = tactics.ai_throttle if distance > tactics.ai_range else 0.28
+	var ahead: Dictionary = ray(position, position + heading * tactics.obstacle_lookahead, 1)
+	var throttle: float = tactics.ai_throttle if distance > tactics.ai_range else 0.45
 	var steering: float = clampf(angle_difference(rotation, desired) * 2.4, -1, 1)
 	if not ahead.is_empty():
 		# Pick the clearest side; normal points away from the obstacle.
@@ -33,7 +33,7 @@ func _physics_process(delta: float) -> void:
 		stuck_time = 0.0
 	last_position = position
 	if stuck_time > 1.2:
-		recovery = 1.5
+		recovery = 2.5
 		stuck_time = 0.0
 	if recovery > 0.0:
 		recovery -= delta
@@ -43,12 +43,14 @@ func _physics_process(delta: float) -> void:
 	var battery: CannonBattery = starboard if side > 0 else port
 	var aligned: bool = absf(heading.dot(offset.normalized())) < tactics.ai_fire_angle
 	var clear: bool = ray(position, target.position, 1).is_empty()
-	if aligned and clear and distance < guns.projectile_speed * guns.projectile_lifetime * 0.85 and battery.ready():
+	# Keep the warning latched through small heading changes caused by rudder lag.
+	# Recheck cover/range throughout and alignment at release; no shot swivels.
+	var in_range: bool = distance < guns.projectile_speed * guns.projectile_lifetime * 0.85
+	if (aligned or warning > 0.0) and clear and in_range and battery.ready():
 		warning += delta
-		throttle = 0.0
-		steering = 0.0
 		if warning >= tactics.ai_telegraph:
-			fire_loaded()
+			if absf(heading.dot(offset.normalized())) < tactics.ai_fire_angle * 1.8:
+				fire_loaded()
 			warning = 0.0
 	else:
 		warning = 0.0

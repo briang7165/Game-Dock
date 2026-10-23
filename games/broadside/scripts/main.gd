@@ -6,10 +6,16 @@ var ui: CanvasLayer
 var hud: Label
 var panel: Control
 var screen: String = "menu"
+var audio: Node
+var settings_origin: String = "menu"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().auto_accept_quit = false
 	Controls.install()
+	audio = Node.new()
+	audio.set_script(preload("res://scripts/audio.gd"))
+	add_child(audio)
 	ui = CanvasLayer.new()
 	add_child(ui)
 	show_menu()
@@ -52,6 +58,7 @@ func menu(title: String, subtitle: String, choices: Dictionary) -> void:
 		button.text = caption
 		button.custom_minimum_size = Vector2(330,48)
 		button.add_theme_font_size_override("font_size",22)
+		button.pressed.connect(audio.play_effect.bind("select"))
 		button.pressed.connect(choices[caption])
 		button.mouse_entered.connect(button.grab_focus)
 		column.add_child(button)
@@ -68,22 +75,29 @@ func menu(title: String, subtitle: String, choices: Dictionary) -> void:
 
 func show_menu() -> void:
 	get_tree().paused = false
+	audio.clear_effects()
+	audio.ducked = false
+	audio.set_battle(false)
 	if is_instance_valid(arena):
 		remove_child(arena)
 		arena.queue_free()
 		arena = null
 	clear_ui()
 	screen = "menu"
-	menu("The Sable Channel", "A one-on-one naval duel • M1 combat prototype\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Quit": quit_game})
+	menu("The Sable Channel", "A one-on-one naval duel • M1.1 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Settings": show_settings,"Quit": quit_game})
 
 func start_battle() -> void:
 	get_tree().paused = false
+	audio.clear_effects()
+	audio.ducked = false
+	audio.set_battle(true)
 	if is_instance_valid(arena):
 		remove_child(arena)
 		arena.queue_free()
 	clear_ui()
 	screen = "battle"
 	arena = preload("res://scenes/Arena.tscn").instantiate()
+	arena.audio = audio
 	arena.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(arena)
 	arena.battle_ended.connect(end_battle)
@@ -94,8 +108,13 @@ func start_battle() -> void:
 	hud.add_theme_constant_override("shadow_offset_x",2)
 	hud.add_theme_constant_override("shadow_offset_y",2)
 	ui.add_child(hud)
+	var indicators := Control.new()
+	indicators.set_script(preload("res://scripts/enemy_indicators.gd"))
+	indicators.arena = arena
+	ui.add_child(indicators)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	audio.set_motion(absf(arena.player.speed)/arena.player.hull.top_speed if is_instance_valid(arena) else 0.0,delta)
 	if is_instance_valid(hud) and is_instance_valid(arena):
 		hud.text = "YOUR HULL  %d / %d     ENEMY  %d / %d\nPORT  %s     STARBOARD  %s\nWASD / arrows · Sail     Space · Broadside     Esc · Pause" % [arena.player.health,arena.player.hull.max_health,arena.enemy.health,arena.enemy.hull.max_health,reload_text(arena.player.port),reload_text(arena.player.starboard)]
 
@@ -110,12 +129,15 @@ func _input(event: InputEvent) -> void:
 			resume_battle()
 		elif screen == "result":
 			show_menu()
+		elif screen == "settings":
+			close_settings()
 		get_viewport().set_input_as_handled()
 
 func pause_battle() -> void:
 	screen = "pause"
 	get_tree().paused = true
-	menu("Anchors held", "Combat is paused", {"Resume": resume_battle,"Restart duel": start_battle,"Main menu": show_menu})
+	audio.ducked = true
+	menu("Anchors held", "Combat is paused", {"Resume": resume_battle,"Settings": show_settings,"Restart duel": start_battle,"Main menu": show_menu})
 
 func resume_battle() -> void:
 	if is_instance_valid(panel):
@@ -124,11 +146,42 @@ func resume_battle() -> void:
 		panel = null
 	screen = "battle"
 	get_tree().paused = false
+	audio.ducked = false
 
 func end_battle(victory: bool) -> void:
 	screen = "result"
 	get_tree().paused = true
+	audio.ducked = true
+	audio.play_effect("victory" if victory else "defeat")
 	menu("Victory" if victory else "Lost at sea", "Enemy sloop sunk. The channel is yours." if victory else "Your sloop has sunk. Try a wider firing angle.", {"Sail again": start_battle,"Main menu": show_menu})
 
 func quit_game() -> void:
+	audio.shutdown()
+	# Let the audio mixer retire playback references before destroying the tree.
+	await get_tree().create_timer(0.15,true,false,true).timeout
 	get_tree().quit()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		quit_game()
+
+func show_settings() -> void:
+	settings_origin = screen
+	if is_instance_valid(panel):
+		ui.remove_child(panel)
+		panel.queue_free()
+	screen = "settings"
+	panel = Control.new()
+	panel.set_script(preload("res://scripts/audio_settings.gd"))
+	panel.audio = audio
+	ui.add_child(panel)
+	panel.closed.connect(close_settings)
+
+func close_settings() -> void:
+	ui.remove_child(panel)
+	panel.queue_free()
+	panel = null
+	if settings_origin == "pause":
+		pause_battle()
+	else:
+		show_menu()

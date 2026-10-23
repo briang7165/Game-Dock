@@ -7,6 +7,8 @@ signal salvo(ship: BroadsideShip, side: float)
 @export var enemy: bool = false
 var health: float
 var speed: float = 0.0
+var turn_velocity: float = 0.0
+var drift: Vector2 = Vector2.ZERO
 var port: CannonBattery
 var starboard: CannonBattery
 var telegraph: float = 0.0
@@ -33,17 +35,28 @@ func step(delta: float, throttle: float, steering: float) -> void:
 	port.tick(delta)
 	starboard.tick(delta)
 	hit_flash = maxf(0.0, hit_flash - delta)
-	rotation += steering * hull.turn_rate * delta * (0.50 + 0.50 * absf(speed) / hull.top_speed)
+	var old_forward: Vector2 = Vector2.UP.rotated(rotation)
+	var effectiveness: float = lerpf(hull.stationary_steering, 1.0, clampf(absf(speed) / hull.top_speed, 0.0, 1.0))
+	var desired_turn: float = steering * hull.turn_rate * effectiveness
+	turn_velocity = move_toward(turn_velocity, desired_turn, hull.rudder_acceleration * delta)
+	rotation += turn_velocity * delta
+	var forward: Vector2 = Vector2.UP.rotated(rotation)
 	if throttle > 0.0:
 		speed = move_toward(speed, hull.top_speed * throttle, hull.acceleration * delta)
 	elif throttle < 0.0:
-		speed = move_toward(speed, -hull.reverse_speed, hull.acceleration * delta)
+		speed = move_toward(speed, -hull.reverse_speed, hull.braking * delta)
 	else:
-		speed = move_toward(speed, 0.0, hull.drag * delta)
-	velocity = Vector2.UP.rotated(rotation) * speed
+		speed = move_toward(speed, 0.0, (hull.drag + speed * speed * hull.water_resistance) * delta)
+	# Retain a little of the old heading's momentum, then resist lateral slip.
+	drift += (old_forward - forward) * speed
+	drift -= forward * drift.dot(forward)
+	drift *= exp(-hull.lateral_drag * delta)
+	drift = drift.limit_length(hull.max_drift)
+	velocity = forward * speed + drift
 	move_and_slide()
 	if get_slide_collision_count() > 0:
 		speed *= 0.95
+		drift = Vector2.ZERO
 	queue_redraw()
 
 func fire_loaded() -> int:
@@ -54,6 +67,7 @@ func fire_loaded() -> int:
 		if not battery.consume():
 			continue
 		salvo.emit(self, battery.side)
+		arena.sound("cannon", global_position)
 		for index: int in range(guns.gun_count):
 			var projectile: Node2D = preload("res://scenes/Cannonball.tscn").instantiate()
 			var angle: float = deg_to_rad(guns.spread_degrees) * (float(index) - float(guns.gun_count - 1) / 2.0)

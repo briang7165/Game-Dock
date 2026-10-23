@@ -77,8 +77,8 @@ func run() -> void:
 		shooter.fire_loaded()
 		await frames(90)
 		healths.append(target.health)
-	check(healths[0] == 100,"moving ship dodges a medium-range volley aimed at its old position")
-	check(healths[1] < 100,"manually leading the same moving target produces a real collision")
+	check(healths[0] == game.arena.player.hull.max_health,"moving ship dodges a medium-range volley aimed at its old position")
+	check(healths[1] < game.arena.player.hull.max_health,"manually leading the same moving target produces a real collision")
 	healths.clear()
 	for lead: bool in [false,true]:
 		game.start_battle()
@@ -95,8 +95,8 @@ func run() -> void:
 		shooter.fire_loaded()
 		await frames(150)
 		healths.append(target.health)
-	check(healths[0] == 100,"long-range volley can be dodged through movement")
-	check(healths[1] < 100,"long-range manual lead can hit without homing")
+	check(healths[0] == game.arena.player.hull.max_health,"long-range volley can be dodged through movement")
+	check(healths[1] < game.arena.player.hull.max_health,"long-range manual lead can hit without homing")
 	var viewport := Vector2(1280,720)
 	check(Indicators.marker(Vector2(400,300),viewport).is_empty(),"visible enemy has no indicator")
 	for point: Vector2 in [Vector2(-200,360),Vector2(1500,360),Vector2(640,-300),Vector2(640,1000),Vector2(-300,-500),Vector2(1600,1100)]:

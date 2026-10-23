@@ -2,6 +2,10 @@
 
 **Approved 2026-10-22.** Status: game design decided; implementation pending. For Codex execution see docs/CODEX_BROADSIDE_BUILD.md and Issue #3. This document supersedes the earlier provisional draft. Do not substitute mouse-aim or other past control ideas.
 
+## New approved vision: Endless Odyssey (2026-10-23)
+
+Read **[Endless Odyssey campaign design](BROADSIDE_ENDLESS_ODYSSEY.md)** for the newest user direction. Early sloop/AI should be more fragile to make first duels faster, starting balance **test** at approximately 60 player HP and 16 cannonball damage, then tuning. The long-term game features naming **captain and ship**, a skippable map/chart voyage cutscene between discrete battles, continuing **endless chapters**, a dock/shipyard with genuinely diverse tactical upgrades (sails, rudder, gunnery, hull, lookout, crew, utility and equipment loadout tradeoffs), distinct purchasable hull classes and enemy variety. Keep **one cannon per broadside** on a new sloop; advanced power is earned. Implement in stages after M1.2 with tests; this supplements all previously confirmed controls/art/terrain.
+
 ## Latest approved refinement: M1.2 (2026-10-22)
 
 **Read [M1.2 starter cannon, bottom HUD and collision damage spec](BROADSIDE_M12_FEEDBACK.md) before implementing or modifying M1.1.** The starting sloop must have **ONE cannon on EACH side**, rather than three per side, with earned additional cannons planned for M2. Replace text-only battle HUD with a **bottom-anchored hull-health bar and separate visual port/starboard automatic-reload bars**. Rocky-island crashes damage hulls with severity based on impact speed. **Ship-to-ship rams damage both vessels**, without damage repeating every frame while in contact. This explicitly supersedes any earlier generic defaults about starting weapon count, HUD or collision damage. Preserve all other approved control and art choices.

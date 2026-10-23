@@ -46,11 +46,11 @@ func run() -> void:
 	await frames(1)
 	check(hud.port_bar.value == 25 and hud.starboard_bar.value == 100,"HUD independently reads actual port and starboard reloads")
 	check(hud.starboard_state.text == "READY" and "%" in hud.port_state.text,"readiness and countdown percentage use text as well as color")
-	check(hud.hull_label.text == "80 / 100 HP" and hud.hull_bar.value > 80,"hull number updates immediately while bar eases")
+	check(hud.hull_label.text == "40 / 60 HP" and hud.hull_bar.value > 40,"hull number updates immediately while bar eases")
 	check(hud.flash > 0,"damage briefly highlights HUD")
 	await frames(20)
-	check(hud.hull_bar.value == 80,"hull display converges to actual health")
-	player.take_damage(60)
+	check(hud.hull_bar.value == 40,"hull display converges to actual health")
+	player.take_damage(30)
 	await frames(1)
 	check("CRITICAL" in hud.hull_title.text,"low health has an explicit critical warning")
 	check(hud.bottom.get_global_rect().end.y <= root.get_visible_rect().size.y and hud.bottom.anchor_bottom == 1,"HUD remains bottom anchored inside viewport")
@@ -71,7 +71,7 @@ func run() -> void:
 	for i: int in range(90):
 		player.step(1.0/60,0,0)
 		await frames(1)
-	check(player.health == 100,"actual gentle island approach does not damage the hull")
+	check(player.health == player.hull.max_health,"actual gentle island approach does not damage the hull")
 	# Actual move_and_slide rock contact, including four seconds holding throttle.
 	await fresh()
 	player = game.arena.player
@@ -81,9 +81,9 @@ func run() -> void:
 	for i: int in range(120):
 		player.step(1.0/60,1,0)
 		await frames(1)
-		if player.health < 100:
+		if player.health < player.hull.max_health:
 			break
-	check(player.health < 100 and player.health >= 68,"real high-speed island collision damages the hull within cap")
+	check(player.health < player.hull.max_health and player.health >= player.hull.max_health-stats.maximum_damage,"real high-speed island collision damages the hull within cap")
 	var health: float = player.health
 	for i: int in range(240):
 		player.step(1.0/60,1,0)
@@ -110,9 +110,9 @@ func run() -> void:
 	for i: int in range(120):
 		player.step(1.0/60,1,0)
 		await frames(1)
-		if player.health < 100:
+		if player.health < player.hull.max_health:
 			break
-	check(player.health < 100 and is_equal_approx(player.health,enemy.health),"actual ram damages attacker and stationary target equally")
+	check(player.health < player.hull.max_health and is_equal_approx(player.health,enemy.health),"actual ram damages attacker and stationary target equally")
 	health = player.health
 	for i: int in range(180):
 		player.step(1.0/60,1,0)
@@ -137,7 +137,7 @@ func run() -> void:
 		check(is_equal_approx(damage,stats.damage_for_speed(120)),"head-on relative speeds combine independent of callback order")
 		game.arena.impacts.report(enemy,player,Vector2.RIGHT,enemy.motion_velocity(),enemy.position)
 		game.arena.impacts.report(player,enemy,Vector2.LEFT,player.motion_velocity(),player.position)
-		check(is_equal_approx(player.health,100-damage) and is_equal_approx(enemy.health,100-damage),"duplicate reports deduplicate the unordered pair")
+		check(is_equal_approx(player.health,player.hull.max_health-damage) and is_equal_approx(enemy.health,enemy.hull.max_health-damage),"duplicate reports deduplicate the unordered pair")
 	await fresh()
 	player = game.arena.player
 	enemy = game.arena.enemy

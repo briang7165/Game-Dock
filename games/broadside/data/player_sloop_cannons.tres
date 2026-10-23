@@ -3,3 +3,4 @@
 [resource]
 script = ExtResource("1")
 gun_count = 1
+damage = 16.0

@@ -84,7 +84,7 @@ func show_menu() -> void:
 		arena = null
 	clear_ui()
 	screen = "menu"
-	menu("The Sable Channel", "A one-on-one naval duel • M1.2 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Settings": show_settings,"Quit": quit_game})
+	menu("The Sable Channel", "A one-on-one naval duel • M1.3 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Settings": show_settings,"Quit": quit_game})
 
 func start_battle() -> void:
 	get_tree().paused = false

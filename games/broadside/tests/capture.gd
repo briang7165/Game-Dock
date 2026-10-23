@@ -20,7 +20,7 @@ func run() -> void:
 			"settings": game.pause_battle(); game.show_settings()
 			"indicator": game.arena.enemy.position = Vector2(1050,700)
 			"hud":
-				game.arena.player.take_damage(80)
+				game.arena.player.take_damage(game.arena.player.hull.max_health*0.8)
 				game.arena.player.starboard.remaining = 0
 				game.arena.enemy.position = Vector2(1050,700)
 				await create_timer(0.6).timeout

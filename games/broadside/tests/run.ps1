@@ -15,5 +15,6 @@ Invoke-GodotCheck @('--fixed-fps', '60', '--script', 'res://tests/combat_test.gd
 Invoke-GodotCheck @('--fixed-fps', '60', '--script', 'res://tests/ai_test.gd')
 Invoke-GodotCheck @('--fixed-fps', '60', '--script', 'res://tests/refinement_test.gd')
 Invoke-GodotCheck @('--fixed-fps', '60', '--script', 'res://tests/m12_test.gd')
+Invoke-GodotCheck @('--fixed-fps', '60', '--script', 'res://tests/balance_test.gd')
 & $Python (Join-Path $PSScriptRoot 'manifest_test.py')
 if ($LASTEXITCODE -ne 0) { throw 'Manifest validation failed.' }

@@ -1,10 +1,12 @@
-# Broadside — M1.2 combat refinement
+# Broadside — M1.3 fragile-sloop balance
 
 A standalone, offline Godot **4.5.2 stable** 2D game. Open `project.godot` in that version and press **F6 on Main.tscn or F5**. Choose **Set sail**. No plugins, accounts, external art, or Game Dock installation are needed. This is a playable combat prototype awaiting human review, not the final art pass.
 
 M1.1 follows the [user's refinement brief](../../docs/BROADSIDE_M11_REFINEMENT.md): heavier momentum/rudder response, slower readable cannonballs, wider camera, offscreen hostile arrows, and original offline music/SFX. The existing combat, scene structure and controls remain. [M1.1 validation and tuning notes](M11_TEST_RESULTS.md) supersede M1's baseline results for this update.
 
 M1.2 adds one starter cannon per side, a bottom hull/reload HUD, and speed-based rock/ship crash damage. See [M1.2 validation](M12_TEST_RESULTS.md) and the [approved specification](../../docs/BROADSIDE_M12_FEEDBACK.md).
+
+M1.3 tests the approved Endless Odyssey starter balance: **60 HP and 16 cannonball damage for both sloops**, four clean hits to sink, unchanged three-second automatic reload and 0.9-second AI warning. Crashes cap at 18 HP (30% of a fresh hull). See [M1.3 test evidence](M13_TEST_RESULTS.md). The 45–90 second ordinary-player duel target still needs hands-on review. Campaign M2-A follows only after PR #4 is reviewed and merged.
 
 ## Play
 
@@ -38,7 +40,7 @@ Carry momentum through turns and brake early. At 400 world units, cannonballs no
 - `audio.gd` / `audio_synth.gd`: original PCM synthesis once at boot; persistent Music/SFX buses, capped transient voices, independent volume/mute and orderly mixer shutdown. `data/audio.tres` exposes tempo, gains and fade time. `enemy_indicators.gd` only reads ship positions; it cannot steer or aim weapons.
 - AI uses broadside alignment, terrain line-of-sight, forward obstacle probes and reverse/turn recovery. This is local steering rather than a general path planner.
 
-Impact tuning lives in `data/impacts.tres`: normal closing speed must exceed 35 units/s; damage scales at 0.22 HP per excess unit/s, capped at 32 HP. Each contact needs both 0.75 seconds cooldown and 0.12 seconds of separation before another hit. Rams use both ships' velocity snapshots and damage both once. Bounds use the same terrain rules.
+Impact tuning lives in `data/impacts.tres`: normal closing speed must exceed 35 units/s; damage scales at 0.12 HP per excess unit/s, capped at 18 HP. Each contact needs both 0.75 seconds cooldown and 0.12 seconds of separation before another hit. Rams use both ships' velocity snapshots and damage both once. Bounds use the same terrain rules.
 
 Player and enemy scenes have separate one-gun loadout resources. `set_cannon_loadout()` validates hull capacity (sloop: two per side), preserves reload fractions, and drives both drawn muzzles and actual projectiles. No purchases or upgrade UI are included.
 

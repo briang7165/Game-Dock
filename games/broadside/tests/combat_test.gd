@@ -189,7 +189,7 @@ func run() -> void:
 	check(root.gui_get_focus_owner().text == "Sail again", "result keyboard focus")
 	await tap(KEY_ENTER)
 	check(game.screen == "battle" and not paused, "keyboard restart creates new battle")
-	check(game.arena.player.health == 100 and game.arena.enemy.health == 100, "restart resets health")
+	check(game.arena.player.health == game.arena.player.hull.max_health and game.arena.enemy.health == game.arena.enemy.hull.max_health, "restart resets health")
 	game.arena.player.take_damage(1000)
 	await frames(60)
 	check(game.screen == "result", "player sinking produces defeat")

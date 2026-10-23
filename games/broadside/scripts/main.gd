@@ -3,7 +3,7 @@ extends Node
 const Controls = preload("res://scripts/controls.gd")
 var arena: Node2D
 var ui: CanvasLayer
-var hud: Label
+var hud: Control
 var panel: Control
 var screen: String = "menu"
 var audio: Node
@@ -84,7 +84,7 @@ func show_menu() -> void:
 		arena = null
 	clear_ui()
 	screen = "menu"
-	menu("The Sable Channel", "A one-on-one naval duel • M1.1 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Settings": show_settings,"Quit": quit_game})
+	menu("The Sable Channel", "A one-on-one naval duel • M1.2 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Settings": show_settings,"Quit": quit_game})
 
 func start_battle() -> void:
 	get_tree().paused = false
@@ -101,12 +101,9 @@ func start_battle() -> void:
 	arena.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(arena)
 	arena.battle_ended.connect(end_battle)
-	hud = make_label("",20)
-	hud.position = Vector2(20,18)
-	hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	hud.add_theme_color_override("font_shadow_color",Color("071c27"))
-	hud.add_theme_constant_override("shadow_offset_x",2)
-	hud.add_theme_constant_override("shadow_offset_y",2)
+	hud = Control.new()
+	hud.set_script(preload("res://scripts/battle_hud.gd"))
+	hud.arena = arena
 	ui.add_child(hud)
 	var indicators := Control.new()
 	indicators.set_script(preload("res://scripts/enemy_indicators.gd"))
@@ -115,11 +112,6 @@ func start_battle() -> void:
 
 func _process(delta: float) -> void:
 	audio.set_motion(absf(arena.player.speed)/arena.player.hull.top_speed if is_instance_valid(arena) else 0.0,delta)
-	if is_instance_valid(hud) and is_instance_valid(arena):
-		hud.text = "YOUR HULL  %d / %d     ENEMY  %d / %d\nPORT  %s     STARBOARD  %s\nWASD / arrows · Sail     Space · Broadside     Esc · Pause" % [arena.player.health,arena.player.hull.max_health,arena.enemy.health,arena.enemy.hull.max_health,reload_text(arena.player.port),reload_text(arena.player.starboard)]
-
-func reload_text(battery: CannonBattery) -> String:
-	return "READY" if battery.ready() else "%.1fs" % battery.remaining
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause") and not event.is_echo():

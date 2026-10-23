@@ -101,7 +101,7 @@ func run() -> void:
 	check(get_nodes_in_group("projectiles").is_empty(), "Q, E and mouse click cannot fire")
 	player.port.remaining = 1.0
 	await tap(KEY_SPACE)
-	check(get_nodes_in_group("projectiles").size() == 3, "Space fires only loaded starboard")
+	check(get_nodes_in_group("projectiles").size() == 1, "Space fires only loaded starboard")
 	check(is_equal_approx(player.port.remaining,1.0), "reloading port not consumed or reset")
 	check(player.health == hp, "Space never repairs")
 	for shot: Node in get_nodes_in_group("projectiles"):
@@ -112,7 +112,7 @@ func run() -> void:
 	player.starboard.remaining = 0
 	key(KEY_SPACE)
 	await frames(1)
-	check(get_nodes_in_group("projectiles").size() == 6, "fresh Space fires both loaded batteries")
+	check(get_nodes_in_group("projectiles").size() == 2, "fresh Space fires both loaded batteries")
 	for shot: Node in get_nodes_in_group("projectiles"):
 		shot.queue_free()
 	player.port.remaining = 0

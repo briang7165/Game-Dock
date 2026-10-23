@@ -5,9 +5,11 @@ var enemy: BroadsideShip
 var finished: bool = false
 var camera: Camera2D
 var audio: Node
+var impacts: RefCounted = preload("res://scripts/impact_tracker.gd").new()
 @export var encounter: EncounterStats = preload("res://data/encounter.tres")
 
 func _ready() -> void:
+	process_physics_priority = -100
 	for location: Vector2 in [Vector2(-420,-230),Vector2(120,210),Vector2(570,-280)]:
 		var island: StaticBody2D = preload("res://scenes/Island.tscn").instantiate()
 		island.position = location
@@ -45,11 +47,15 @@ func _ready() -> void:
 	camera.limit_bottom = 900
 	player.add_child(camera)
 
+func _physics_process(delta: float) -> void:
+	if not finished:
+		var ships: Array[BroadsideShip] = [player,enemy]
+		impacts.begin_frame(delta,ships)
+
 func _ship_sunk(ship: BroadsideShip) -> void:
 	sound("sink", ship.global_position)
 	effect(ship.position,Color("d4d5bc"),70.0)
-	if finished:
-		return
+	var first_sinking: bool = not finished
 	finished = true
 	player.set_physics_process(false)
 	player.set_process_unhandled_key_input(false)
@@ -58,7 +64,9 @@ func _ship_sunk(ship: BroadsideShip) -> void:
 	sinking.tween_property(ship, "scale", Vector2(0.4,0.4), 0.75)
 	sinking.tween_property(ship, "modulate:a", 0.0, 0.75)
 	sinking.tween_property(ship, "rotation", ship.rotation + 0.4, 0.75)
-	sinking.chain().tween_callback(func() -> void: battle_ended.emit(ship == enemy))
+	if first_sinking:
+		# Mutual destruction is a defeat regardless of physics callback order.
+		sinking.chain().tween_callback(func() -> void: battle_ended.emit(enemy.dead and not player.dead))
 
 func sound(kind: String, at: Vector2) -> void:
 	if is_instance_valid(audio):

@@ -37,6 +37,7 @@ func run() -> void:
 		if player.health < player.hull.max_health:
 			damage_seen = true
 		player.health = player.hull.max_health
+		enemy.health = enemy.hull.max_health
 		peak_projectiles = maxi(peak_projectiles,get_nodes_in_group("projectiles").size())
 	check(enemy.position.distance_to(start) > 50, "AI approaches and maneuvers")
 	check(salvos >= 4, "AI repeatedly aligns and fires its own broadside (%d sides)" % salvos)

@@ -2,6 +2,10 @@
 
 **Approved 2026-10-22.** Status: game design decided; implementation pending. For Codex execution see docs/CODEX_BROADSIDE_BUILD.md and Issue #3. This document supersedes the earlier provisional draft. Do not substitute mouse-aim or other past control ideas.
 
+## Latest approved refinement: M1.2 (2026-10-22)
+
+**Read [M1.2 starter cannon, bottom HUD and collision damage spec](BROADSIDE_M12_FEEDBACK.md) before implementing or modifying M1.1.** The starting sloop must have **ONE cannon on EACH side**, rather than three per side, with earned additional cannons planned for M2. Replace text-only battle HUD with a **bottom-anchored hull-health bar and separate visual port/starboard automatic-reload bars**. Rocky-island crashes damage hulls with severity based on impact speed. **Ship-to-ship rams damage both vessels**, without damage repeating every frame while in contact. This explicitly supersedes any earlier generic defaults about starting weapon count, HUD or collision damage. Preserve all other approved control and art choices.
+
 ## 1. Vision / scope
 - Original, offline, single-player **top-down 2D pirate naval combat** game.
 - **Arcade-tactical** handling: responsive acceleration and turns with modest momentum/drag and a meaningful turning radius; no realistic sail/wind simulation.

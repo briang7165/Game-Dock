@@ -15,11 +15,11 @@ var telegraph: float = 0.0
 var hit_flash: float = 0.0
 var arena: Node2D
 var dead: bool = false
+var hull_shape: CollisionShape2D
 
 func _ready() -> void:
 	health = hull.max_health
-	port = CannonBattery.new(guns, -1.0)
-	starboard = CannonBattery.new(guns, 1.0)
+	set_cannon_loadout(guns)
 	collision_layer = 2
 	collision_mask = 3
 	var shape := CollisionShape2D.new()
@@ -28,6 +28,23 @@ func _ready() -> void:
 	capsule.height = 78.0
 	shape.shape = capsule
 	add_child(shape)
+	hull_shape = shape
+
+func set_cannon_loadout(definition: CannonStats) -> bool:
+	if definition == null or definition.gun_count < 1 or definition.gun_count > hull.cannon_capacity:
+		return false
+	var port_fraction: float = port.remaining/maxf(guns.reload_seconds,0.001) if port != null else 0.0
+	var starboard_fraction: float = starboard.remaining/maxf(guns.reload_seconds,0.001) if starboard != null else 0.0
+	guns = definition.duplicate()
+	port = CannonBattery.new(guns,-1.0)
+	starboard = CannonBattery.new(guns,1.0)
+	port.remaining = port_fraction*guns.reload_seconds
+	starboard.remaining = starboard_fraction*guns.reload_seconds
+	queue_redraw()
+	return true
+
+func motion_velocity() -> Vector2:
+	return Vector2.UP.rotated(rotation)*speed+drift
 
 func step(delta: float, throttle: float, steering: float) -> void:
 	if dead:
@@ -53,7 +70,13 @@ func step(delta: float, throttle: float, steering: float) -> void:
 	drift *= exp(-hull.lateral_drag * delta)
 	drift = drift.limit_length(hull.max_drift)
 	velocity = forward * speed + drift
+	var before_slide: Vector2 = velocity
 	move_and_slide()
+	for i: int in range(get_slide_collision_count()):
+		var collision: KinematicCollision2D = get_slide_collision(i)
+		var other: Object = collision.get_collider()
+		if other is CollisionObject2D:
+			arena.impacts.report(self,other,collision.get_normal(),before_slide,collision.get_position())
 	if get_slide_collision_count() > 0:
 		speed *= 0.95
 		drift = Vector2.ZERO

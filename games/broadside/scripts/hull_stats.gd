@@ -2,6 +2,7 @@ class_name HullStats
 extends Resource
 ## One shared definition; runtime HP/speed always belong to each ship instance.
 @export var title: String = "Sloop"
+@export_range(1, 6) var cannon_capacity: int = 2
 @export var max_health: float = 100.0
 @export var top_speed: float = 165.0
 @export var reverse_speed: float = 22.0

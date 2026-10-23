@@ -2,6 +2,10 @@
 
 **Start here.** This document is intended to be given verbatim to Codex. Source of truth: [approved Broadside specification](BROADSIDE_DESIGN_DRAFT.md). Tracker: [Game Dock issue #3](https://github.com/briang7165/Game-Dock/issues/3). Last design lock: 2026-10-22.
 
+## M1.2 gameplay refinement applies to current PR #4
+
+Before continuing, read [approved M1.2 requirements](BROADSIDE_M12_FEEDBACK.md): starter **one cannon per port/starboard side**, extra guns earned later; responsive **bottom health and dual independent reload status bars**; impact-speed-scaled crash damage from islands, and ship-to-ship collisions damaging **both** vessels exactly once per impact with contact cooldown. Modify existing `feature/broadside-m1-combat` PR #4 (or make a focused follow-up if current PR has merged) rather than refactoring the launcher. Retain M1.1 music, camera, enemy indicators and physics.
+
 ## 0. Operating instructions for the coding agent
 You are implementing an original Windows desktop game in the existing repository **briang7165/Game-Dock**. Work in a new feature branch, open a focused pull request, do not auto-merge. **Do not rewrite Game Dock's launcher.** Read root README.md, docs/ARCHITECTURE.md, specs/game-manifest.schema.json and docs/BROADSIDE_DESIGN_DRAFT.md first, before modifying code. The latest approved game-spec rules win over old issues or suggestions.
 

@@ -101,7 +101,7 @@ func run() -> void:
 	check(Indicators.marker(Vector2(400,300),viewport).is_empty(),"visible enemy has no indicator")
 	for point: Vector2 in [Vector2(-200,360),Vector2(1500,360),Vector2(640,-300),Vector2(640,1000),Vector2(-300,-500),Vector2(1600,1100)]:
 		var marker: Dictionary = Indicators.marker(point,viewport)
-		check(Rect2(20,110,1240,590).has_point(marker.position),"offscreen marker stays on safe edges for %s" % point)
+		check(Rect2(20,50,1240,505).has_point(marker.position),"offscreen marker stays on safe edges for %s" % point)
 		check(marker.direction.dot((point-viewport*0.5).normalized()) > 0.999,"indicator points toward actual position")
 	var audio: Node = game.audio
 	var indicators: Control = game.ui.get_child(game.ui.get_child_count()-1)

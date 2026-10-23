@@ -57,7 +57,7 @@ func run() -> void:
 	for i: int in range(120):
 		ship.step(1.0/60,-1,0)
 	check(absf(ship.speed) <= 22.01,"reverse speed is limited")
-	check(is_equal_approx(game.arena.camera.zoom.x,0.8),"camera reveals 25 percent more width")
+	check(is_equal_approx(game.arena.camera.zoom.x,0.72),"camera uses the wider M1.4 framing")
 	check(ship.guns.projectile_speed == 300 and ship.guns.projectile_lifetime*300 >= 860,"slower cannonballs retain useful range")
 	check(400.0/ship.guns.projectile_speed > 1.3,"medium-range travel exceeds 1.3 seconds")
 	# Clear-water paired scenario: identical fixed volley, change only the human's lead.
@@ -101,10 +101,10 @@ func run() -> void:
 	check(Indicators.marker(Vector2(400,300),viewport).is_empty(),"visible enemy has no indicator")
 	for point: Vector2 in [Vector2(-200,360),Vector2(1500,360),Vector2(640,-300),Vector2(640,1000),Vector2(-300,-500),Vector2(1600,1100)]:
 		var marker: Dictionary = Indicators.marker(point,viewport)
-		check(Rect2(20,50,1240,505).has_point(marker.position),"offscreen marker stays on safe edges for %s" % point)
+		check(Rect2(20,50,1240,650).has_point(marker.position),"offscreen marker stays on safe edges for %s" % point)
 		check(marker.direction.dot((point-viewport*0.5).normalized()) > 0.999,"indicator points toward actual position")
 	var audio: Node = game.audio
-	var indicators: Control = game.ui.get_child(game.ui.get_child_count()-1)
+	var indicators: Control = game.indicators
 	game.arena.enemy.position = Vector2(10000,10000)
 	await frames(2)
 	check(indicators.collect_markers().size() == 1,"offscreen live enemy produces one marker")

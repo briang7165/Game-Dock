@@ -2,6 +2,10 @@
 
 **Start here.** This document is intended to be given verbatim to Codex. Source of truth: [approved Broadside specification](BROADSIDE_DESIGN_DRAFT.md). Tracker: [Game Dock issue #3](https://github.com/briang7165/Game-Dock/issues/3). Last design lock: 2026-10-22.
 
+## Immediate M1.4 usability feedback: camera / HUD / location names (2026-10-23)
+
+Read [docs/BROADSIDE_M14_VIEWPORT_HUD_LOCATION.md](BROADSIDE_M14_VIEWPORT_HUD_LOCATION.md). Player wants more ocean visible (zoom currently 0.80; test ~0.72), proper non-distorted fullscreen/window handling, health and two reload bars in **dedicated footer space outside world viewport**, not covering rocks/ships/shots, and an encounter-data-driven map location title (first: The Sable Channel). Offscreen enemy arrows must use gameplay rectangle only; do not collide with footer or place banner. Add screenshots and actual tests. Work as incremental M1.4 update to currently open combat PR #4, not campaign PR.
+
 ## Future work authorized: Endless Odyssey, phased (2026-10-23)
 
 See **[docs/BROADSIDE_ENDLESS_ODYSSEY.md](BROADSIDE_ENDLESS_ODYSSEY.md)** for latest design and gate-based acceptance. Immediate M1.3: short/fragile starter-battle balance after M1.2, approximately 60 starter HP and 16 cannon damage as **tuning starting values**, with ship collision safeguards. Subsequent PRs: M2-A named captain/ship, persistent campaign and chart/sailing cutscene linking endless battle encounters; M2-B real dock/shop with distinctive sloop/brig/frigate/galleon purchases and varied substantive upgrades (cannons, reload, sails, rudder, lookout, salvage, ram/carpenter); M2-C branching routes, advanced loadouts, crew, enemy encounters; M3 polish. Avoid implementing broad M2 in current PR #4. No change to mouse-free Space-to-fire combat.

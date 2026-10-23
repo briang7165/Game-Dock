@@ -3,6 +3,10 @@
 
 Status: approved game vision; the specific numerical balancing values below are **starting targets to test**, not final fixed balance. Codex must preserve a functional game throughout incremental implementation. Related: docs/BROADSIDE_DESIGN_DRAFT.md, docs/BROADSIDE_M12_FEEDBACK.md, docs/CODEX_BROADSIDE_BUILD.md, GitHub PR #4.
 
+## Near-term combat presentation refinement (M1.4)
+
+Before full chart/campaign implementation, finish the [zoom/fullscreen/true bottom HUD/location-title pass](BROADSIDE_M14_VIEWPORT_HUD_LOCATION.md) in combat PR #4. Every battle has a named place supplied by encounter data, starting with `The Sable Channel`, and map view/HUD do not overlap. Later the Endless Odyssey travel chart supplies those location names; don't hard-code names into a HUD-only text widget.
+
 ## North star
 
 The player is a named pirate captain, sailing a named ship on an **endless, chapter-based sea odyssey**. Start fragile and poorly armed. Win fast, risky encounters, recover treasure and salvage, chart new waters, and transform your small ship into a vessel with unique advantages. **Choices** matter: speed versus armor; broadside force versus reload time; riskier voyages versus safe rewards; crew utility versus direct combat power. Between discrete battles, a short cinematic **chart/sailing interlude** visually carries the player's ship forward. This is NOT an enormous seamless open world.

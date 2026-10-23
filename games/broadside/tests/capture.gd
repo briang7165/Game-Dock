@@ -14,6 +14,9 @@ func run() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if args.size() > 1:
 		match args[1]:
+			"fullscreen":
+				game.display.set_fullscreen(true,false)
+				await create_timer(0.6).timeout
 			"menu": game.show_menu()
 			"pause": game.pause_battle()
 			"result": game.end_battle(true)
@@ -29,4 +32,6 @@ func run() -> void:
 	if args.size() > 0:
 		var error: Error = root.get_texture().get_image().save_png(args[0])
 		print("Capture result: ",error, " size: ",root.size)
+	if args.size() > 1 and args[1] == "fullscreen":
+		game.display.set_fullscreen(false,false)
 	game.quit_game()

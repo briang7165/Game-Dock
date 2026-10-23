@@ -6,10 +6,14 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_rect(Rect2(-1200,-900,2400,1800),Color("134655"))
+	# Cover the actual camera extent, including ultrawide views beyond fixed walls.
+	var inverse: Transform2D = get_viewport().get_canvas_transform().affine_inverse()
+	var visible := Rect2(inverse * Vector2.ZERO, Vector2.ZERO)
+	visible = visible.expand(inverse * get_viewport_rect().size).grow(100)
+	draw_rect(visible,Color("134655"))
 	# Deterministic brush-like bands, no asset downloads or per-frame randomness.
-	for row: int in range(-11,12):
-		for col: int in range(-14,15):
+	for row: int in range(floori(visible.position.y/83)-1,ceili(visible.end.y/83)+1):
+		for col: int in range(floori(visible.position.x/90)-1,ceili(visible.end.x/90)+1):
 			var x: float = col * 90.0 + sin(row * 13.0) * 32.0
 			var y: float = row * 83.0 + sin(col * 3.0 + time * 0.4) * 8.0
 			var tint := Color(0.16,0.46,0.50,0.20 + 0.10 * sin(row + col))

@@ -1,4 +1,4 @@
-# Broadside — M1.3 fragile-sloop balance
+# Broadside — M1.4 battlefield and display refinement
 
 A standalone, offline Godot **4.5.2 stable** 2D game. Open `project.godot` in that version and press **F6 on Main.tscn or F5**. Choose **Set sail**. No plugins, accounts, external art, or Game Dock installation are needed. This is a playable combat prototype awaiting human review, not the final art pass.
 
@@ -7,6 +7,8 @@ M1.1 follows the [user's refinement brief](../../docs/BROADSIDE_M11_REFINEMENT.m
 M1.2 adds one starter cannon per side, a bottom hull/reload HUD, and speed-based rock/ship crash damage. See [M1.2 validation](M12_TEST_RESULTS.md) and the [approved specification](../../docs/BROADSIDE_M12_FEEDBACK.md).
 
 M1.3 tests the approved Endless Odyssey starter balance: **60 HP and 16 cannonball damage for both sloops**, four clean hits to sink, unchanged three-second automatic reload and 0.9-second AI warning. Crashes cap at 18 HP (30% of a fresh hull). See [M1.3 test evidence](M13_TEST_RESULTS.md). The 45–90 second ordinary-player duel target still needs hands-on review. Campaign M2-A follows only after PR #4 is reviewed and merged.
+
+M1.4 reserves a full-width 120-logical-pixel console below a separate battlefield viewport. Camera zoom is 0.72; no world pixels render beneath the meters. Settings now includes a saved Fullscreen/Windowed toggle. The Sable Channel title fades after 2.8 seconds and remains available while paused. See [M1.4 validation](M14_TEST_RESULTS.md).
 
 ## Play
 
@@ -28,8 +30,12 @@ Carry momentum through turns and brake early. At 400 world units, cannonballs no
 
 **Settings**, available from the main and pause menus, provides separate Music and Sound Effects sliders plus mute switches. W/S or Up/Down moves focus; A/D or Left/Right adjusts a slider; Enter/Space toggles switches; mouse clicks/drags work too. Escape returns to the previous menu and preserves pause. Preferences live in `user://audio_settings.cfg`. The continuous music mix fades down in menus/pause, and wake volume responds to ship speed.
 
+Display mode is saved separately in `user://display_settings.cfg`; turn Fullscreen off in Settings to restore the previous window size/position. Audio preferences remain independent. Minimum window size is 800×450; canvas aspect expansion reveals more world on wider screens without changing collision bounds.
+
 ## Structure and tuning
 
+- `battle_view.gd`: a VBox reserves the footer below a clipped SubViewportContainer/SubViewport. Arena physics and camera live in the top viewport; the HUD is a sibling in the root canvas. Keyboard fire dispatch stays at the root so menu events cannot leak into the subviewport.
+- `location_title.gd`: a pausable 2.8-second data-driven entry title. `start_battle(encounter)` accepts an optional EncounterStats location, with no campaign implementation.
 - `Main.tscn` / `main.gd`: focused menu, HUD, pause and scene lifecycle. Combat is a pausable subtree; menus always process.
 - `Arena.tscn`: safe spawns, three rocky islands, solid boundaries, smooth player camera, battle result and short sinking animation.
 - Player/EnemyShip scenes inherit `BroadsideShip`: capsule hull, arcade acceleration/drag and turn rate; enemy controls only its own throttle/heading.

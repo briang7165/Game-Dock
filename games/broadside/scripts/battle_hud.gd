@@ -1,6 +1,6 @@
 extends Control
 ## Informational only. Each meter reads its own live battery; no input actions.
-const PANEL_HEIGHT: float = 144.0
+const PANEL_HEIGHT: float = 120.0
 var arena: Node2D
 var bottom: PanelContainer
 var hull_bar: ProgressBar
@@ -10,7 +10,6 @@ var hull_label: Label
 var hull_title: Label
 var port_state: Label
 var starboard_state: Label
-var enemy_label: Label
 var displayed_health: float
 var previous_health: float
 var flash: float = 0.0
@@ -46,19 +45,19 @@ func _ready() -> void:
 	displayed_health = arena.player.health
 	previous_health = displayed_health
 	bottom = PanelContainer.new()
-	bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	bottom.offset_left = 24
-	bottom.offset_right = -24
-	bottom.offset_top = -PANEL_HEIGHT-16
-	bottom.offset_bottom = -16
-	bottom.add_theme_stylebox_override("panel",box(Color("0a222df2"),Color("aa8951")))
+	bottom.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bottom.offset_left = 0
+	bottom.offset_right = 0
+	bottom.offset_top = 0
+	bottom.offset_bottom = 0
+	bottom.add_theme_stylebox_override("panel",box(Color("0a222d"),Color("aa8951")))
 	add_child(bottom)
 	var margin := MarginContainer.new()
 	for edge: String in ["left","right","top","bottom"]:
-		margin.add_theme_constant_override("margin_"+edge,14)
+		margin.add_theme_constant_override("margin_"+edge,8)
 	bottom.add_child(margin)
 	var stack := VBoxContainer.new()
-	stack.add_theme_constant_override("separation",9)
+	stack.add_theme_constant_override("separation",3)
 	margin.add_child(stack)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",28)
@@ -68,7 +67,7 @@ func _ready() -> void:
 	var starboard := VBoxContainer.new()
 	for column: VBoxContainer in [port,hull,starboard]:
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		column.add_theme_constant_override("separation",5)
+		column.add_theme_constant_override("separation",2)
 		row.add_child(column)
 	hull.size_flags_stretch_ratio = 1.35
 	port.add_child(label("◀  PORT CANNON",18))
@@ -85,16 +84,6 @@ func _ready() -> void:
 	hull.add_child(hull_label)
 	starboard.add_child(starboard_state)
 	stack.add_child(label("WASD / ARROWS  Sail     •     SPACE  Fire loaded sides     •     ESC  Pause",14,Color("9eb1b3")))
-	var enemy_panel := PanelContainer.new()
-	enemy_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	enemy_panel.offset_left = -135
-	enemy_panel.offset_right = 135
-	enemy_panel.offset_top = 16
-	enemy_panel.offset_bottom = 48
-	enemy_panel.add_theme_stylebox_override("panel",box(Color("0a222de6"),Color("556569")))
-	add_child(enemy_panel)
-	enemy_label = label("",16,Color("e8c8b2"))
-	enemy_panel.add_child(enemy_label)
 	ignore_input(self)
 	_process(0.0)
 
@@ -132,4 +121,3 @@ func _process(delta: float) -> void:
 	panel_style.border_color = Color("fff1c4") if flash > 0 else Color("aa8951")
 	battery_state(arena.player.port,port_bar,port_state)
 	battery_state(arena.player.starboard,starboard_bar,starboard_state)
-	enemy_label.text = "HOSTILE SLOOP   %d / %d HP" % [ceili(arena.enemy.health),arena.enemy.hull.max_health]

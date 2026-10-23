@@ -1,6 +1,8 @@
 extends Control
 signal closed
 var audio: Node
+var display: Node
+var fullscreen_toggle: CheckButton
 var music_slider: HSlider
 var sfx_slider: HSlider
 var music_mute: CheckButton
@@ -20,7 +22,7 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation",16)
 	center.add_child(column)
 	var title := Label.new()
-	title.text = "Sound on the high seas"
+	title.text = "Sound & display"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size",30)
 	column.add_child(title)
@@ -28,6 +30,7 @@ func _ready() -> void:
 	music_mute = mute_row(column,"Mute music",audio.music_muted,func(value: bool) -> void: audio.music_muted = value; audio.save_settings())
 	sfx_slider = volume_row(column,"Sound effects",audio.sfx_level,func(value: float) -> void: audio.sfx_level = value/100.0; audio.save_settings())
 	sfx_mute = mute_row(column,"Mute sound effects",audio.sfx_muted,func(value: bool) -> void: audio.sfx_muted = value; audio.save_settings())
+	fullscreen_toggle = mute_row(column,"Fullscreen (off: Windowed)",display.fullscreen,func(value: bool) -> void: display.set_fullscreen(value))
 	var back := Button.new()
 	back.text = "Back"
 	back.custom_minimum_size.y = 44
@@ -37,7 +40,7 @@ func _ready() -> void:
 	help.text = "W/S or ↑/↓ · Focus    A/D or ←/→ · Volume\nEnter/Space · Toggle    Escape · Back\nPreferences saved locally; no network required."
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(help)
-	var controls: Array[Control] = [music_slider,music_mute,sfx_slider,sfx_mute,back]
+	var controls: Array[Control] = [music_slider,music_mute,sfx_slider,sfx_mute,fullscreen_toggle,back]
 	for i: int in range(controls.size()):
 		controls[i].focus_neighbor_top = controls[i].get_path_to(controls[posmod(i-1,controls.size())])
 		controls[i].focus_neighbor_bottom = controls[i].get_path_to(controls[(i+1)%controls.size()])

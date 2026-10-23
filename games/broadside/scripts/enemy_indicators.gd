@@ -13,7 +13,7 @@ static func marker(point: Vector2, viewport_size: Vector2) -> Dictionary:
 	if absf(direction.x) > 0.0001:
 		factor = minf(factor, extent.x / absf(direction.x))
 	if absf(direction.y) > 0.0001:
-		var vertical: float = center.y - 76.0 if direction.y < 0 else center.y - 184.0
+		var vertical: float = center.y - 76.0 if direction.y < 0 else center.y - EDGE
 		factor = minf(factor, vertical / absf(direction.y))
 	return {"position": center + direction * factor, "direction": direction}
 

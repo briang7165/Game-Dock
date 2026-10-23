@@ -3,6 +3,9 @@ extends Node
 const Controls = preload("res://scripts/controls.gd")
 var arena: Node2D
 var ui: CanvasLayer
+var battle_view: Control
+var indicators: Control
+var display: Node
 var hud: Control
 var panel: Control
 var screen: String = "menu"
@@ -13,6 +16,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().auto_accept_quit = false
 	Controls.install()
+	display = preload("res://scripts/display_settings.gd").new()
+	add_child(display)
 	audio = Node.new()
 	audio.set_script(preload("res://scripts/audio.gd"))
 	add_child(audio)
@@ -79,36 +84,40 @@ func show_menu() -> void:
 	audio.ducked = false
 	audio.set_battle(false)
 	if is_instance_valid(arena):
-		remove_child(arena)
+		arena.get_parent().remove_child(arena)
 		arena.queue_free()
 		arena = null
 	clear_ui()
 	screen = "menu"
-	menu("The Sable Channel", "A one-on-one naval duel • M1.3 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Settings": show_settings,"Quit": quit_game})
+	menu("The Sable Channel", "A one-on-one naval duel • M1.4 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Settings": show_settings,"Quit": quit_game})
 
-func start_battle() -> void:
+func start_battle(encounter: EncounterStats = null) -> void:
 	get_tree().paused = false
 	audio.clear_effects()
 	audio.ducked = false
 	audio.set_battle(true)
 	if is_instance_valid(arena):
-		remove_child(arena)
+		arena.get_parent().remove_child(arena)
 		arena.queue_free()
 	clear_ui()
 	screen = "battle"
 	arena = preload("res://scenes/Arena.tscn").instantiate()
+	if encounter != null:
+		arena.encounter = encounter
 	arena.audio = audio
 	arena.process_mode = Node.PROCESS_MODE_PAUSABLE
-	add_child(arena)
+	battle_view = preload("res://scripts/battle_view.gd").new()
+	battle_view.arena = arena
+	ui.add_child(battle_view)
+	hud = battle_view.hud
+	indicators = battle_view.indicators
+	arena.player.set_process_unhandled_key_input(false)
 	arena.battle_ended.connect(end_battle)
-	hud = Control.new()
-	hud.set_script(preload("res://scripts/battle_hud.gd"))
-	hud.arena = arena
-	ui.add_child(hud)
-	var indicators := Control.new()
-	indicators.set_script(preload("res://scripts/enemy_indicators.gd"))
-	indicators.arena = arena
-	ui.add_child(indicators)
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if screen == "battle" and event.is_action_pressed("fire") and not event.is_echo():
+		arena.player.fire_loaded()
+		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
 	audio.set_motion(absf(arena.player.speed)/arena.player.hull.top_speed if is_instance_valid(arena) else 0.0,delta)
@@ -129,7 +138,7 @@ func pause_battle() -> void:
 	screen = "pause"
 	get_tree().paused = true
 	audio.ducked = true
-	menu("Anchors held", "Combat is paused", {"Resume": resume_battle,"Settings": show_settings,"Restart duel": start_battle,"Main menu": show_menu})
+	menu("Anchors held", arena.encounter.location_name + " • Combat is paused", {"Resume": resume_battle,"Settings": show_settings,"Restart duel": start_battle,"Main menu": show_menu})
 
 func resume_battle() -> void:
 	if is_instance_valid(panel):
@@ -166,6 +175,7 @@ func show_settings() -> void:
 	panel = Control.new()
 	panel.set_script(preload("res://scripts/audio_settings.gd"))
 	panel.audio = audio
+	panel.display = display
 	ui.add_child(panel)
 	panel.closed.connect(close_settings)
 

@@ -17,9 +17,11 @@ func run() -> void:
 			"menu": game.show_menu()
 			"pause": game.pause_battle()
 			"result": game.end_battle(true)
+			"settings": game.pause_battle(); game.show_settings()
+			"indicator": game.arena.enemy.position = Vector2(1050,700)
 		await process_frame
 	await RenderingServer.frame_post_draw
 	if args.size() > 0:
 		var error: Error = root.get_texture().get_image().save_png(args[0])
 		print("Capture result: ",error, " size: ",root.size)
-	quit()
+	game.quit_game()

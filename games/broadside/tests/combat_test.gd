@@ -39,7 +39,7 @@ func run() -> void:
 	await frames(2)
 	check(root.gui_get_focus_owner() is Button, "main menu has keyboard focus")
 	await tap(KEY_D)
-	check(root.gui_get_focus_owner().text == "Quit", "D moves menu focus")
+	check(root.gui_get_focus_owner().text == "Settings", "D moves menu focus")
 	await tap(KEY_UP)
 	check(root.gui_get_focus_owner().text == "Set sail", "arrows move menu focus")
 	await tap(KEY_ENTER)
@@ -68,7 +68,7 @@ func run() -> void:
 	check(player.rotation < heading, "A turns port")
 	heading = player.rotation
 	key(KEY_RIGHT)
-	await frames(15)
+	await frames(45) # Allow the deliberately heavy rudder to reverse its turn.
 	key(KEY_RIGHT,false)
 	check(player.rotation > heading, "Right turns starboard")
 	player.speed = 0
@@ -212,6 +212,9 @@ func run() -> void:
 	await frames(2)
 	check(game.screen == "battle", "mouse click activates menu through GUI hit testing")
 	print("RESULT: %d checks, %d failures" % [checks, failures])
+	game.audio.shutdown()
+	OS.delay_msec(150) # Audio mixer runs in wall time, not --fixed-fps simulation.
+	await frames(3)
 	game.queue_free()
 	await frames(2)
 	quit(1 if failures else 0)

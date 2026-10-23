@@ -11,6 +11,10 @@ This repository contains the **Tauri/Rust/React Game Dock launcher** and indepen
 - Report exact tool versions, commands, tests run, and unverified steps. Do not claim native Windows execution based on a headless build.
 - Do not overwrite unexpected local changes; inspect the repository first.
 
+## New campaign direction: Endless Odyssey (2026-10-23)
+
+Read **docs/BROADSIDE_ENDLESS_ODYSSEY.md** for user-approved campaign vision and implementation gates: fragile 60-HP starter test / 16-damage cannonball test, short first duels; named captain and ship; endless chart-linked nautical adventure with skippable sailing interludes between self-contained battles; meaningful shipyard upgrades beyond gun count/HP, and distinct purchasable hulls. **Do not implement the entire campaign in active PR #4**. Only small M1.3 tuning may go there; split M2-A, M2-B and M2-C into reviewed PRs after combat approval. All existing no-mouse-in-combat, Space fire, auto-reload, dual WASD/arrows and music/indicator/HUD/impact requirements still apply.
+
 ## Current priority: Broadside M1.2
 
 Read `docs/BROADSIDE_M12_FEEDBACK.md` for the latest user-requested refinement. The starter sloop has **one cannon on each broadside**, future shipyard upgrades add guns; game HUD has a **bottom-anchored hull-health bar and two independent cannon reload bars**; substantial rocky-island impacts cause crash damage, and ship-on-ship rams cause damage to **both** ships with impact-speed thresholds and safeguards against per-frame repeat damage. Update the existing Broadside PR #4 if still open, and do not implement the full economy yet.

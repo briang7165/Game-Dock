@@ -25,6 +25,8 @@ No additional account or subscription is needed to run the installed application
 - [Approved Broadside game specification](docs/BROADSIDE_DESIGN_DRAFT.md) — painterly top-down arcade-tactical pirate combat; WASD/arrows, Space broadside firing, automatic reload, Esc pause, mouse only in menus; rocky islands; sloop-to-galleon purchase progression.
 - [Codex implementation task book](docs/CODEX_BROADSIDE_BUILD.md) — PR1 playable combat, PR2 shipyard/progression, PR3 art and release.
 - [GitHub Issue #3](https://github.com/briang7165/Game-Dock/issues/3) — implementation tracker.
+- [Endless Odyssey campaign design](docs/BROADSIDE_ENDLESS_ODYSSEY.md) — shorter early battles, captain/ship names, skippable voyage chart, endless adventure chapters, tactical shipyard and varied upgrades.
+- [GitHub Issue #5](https://github.com/briang7165/Game-Dock/issues/5) — staged M2 campaign/shipyard build, separate from current combat PR #4.
 - [AGENTS.md](AGENTS.md) — repository instructions for coding agents.
 
 ## Releasing

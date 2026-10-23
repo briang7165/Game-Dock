@@ -11,6 +11,10 @@ This repository contains the **Tauri/Rust/React Game Dock launcher** and indepen
 - Report exact tool versions, commands, tests run, and unverified steps. Do not claim native Windows execution based on a headless build.
 - Do not overwrite unexpected local changes; inspect the repository first.
 
+## Latest playable-combat visual feedback: Broadside M1.4 (2026-10-23)
+
+Read `docs/BROADSIDE_M14_VIEWPORT_HUD_LOCATION.md`: modest camera zoom-out (0.80 → ~0.72 test), responsive **windowed and fullscreen** framing, separate *reserved* gameplay viewport **above** a bottom-anchored HUD (no ocean drawn behind meters), and a location name card for **The Sable Channel** driven by encounter data. Enemy offscreen arrows must stay in the playfield. Implement as a narrowly scoped improvement to existing PR #4, not as an excuse to begin M2. Preserve M1.3 combat and audio.
+
 ## New campaign direction: Endless Odyssey (2026-10-23)
 
 Read **docs/BROADSIDE_ENDLESS_ODYSSEY.md** for user-approved campaign vision and implementation gates: fragile 60-HP starter test / 16-damage cannonball test, short first duels; named captain and ship; endless chart-linked nautical adventure with skippable sailing interludes between self-contained battles; meaningful shipyard upgrades beyond gun count/HP, and distinct purchasable hulls. **Do not implement the entire campaign in active PR #4**. Only small M1.3 tuning may go there; split M2-A, M2-B and M2-C into reviewed PRs after combat approval. All existing no-mouse-in-combat, Space fire, auto-reload, dual WASD/arrows and music/indicator/HUD/impact requirements still apply.

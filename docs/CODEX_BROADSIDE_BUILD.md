@@ -2,6 +2,10 @@
 
 **Start here.** This document is intended to be given verbatim to Codex. Source of truth: [approved Broadside specification](BROADSIDE_DESIGN_DRAFT.md). Tracker: [Game Dock issue #3](https://github.com/briang7165/Game-Dock/issues/3). Last design lock: 2026-10-22.
 
+## Future work authorized: Endless Odyssey, phased (2026-10-23)
+
+See **[docs/BROADSIDE_ENDLESS_ODYSSEY.md](BROADSIDE_ENDLESS_ODYSSEY.md)** for latest design and gate-based acceptance. Immediate M1.3: short/fragile starter-battle balance after M1.2, approximately 60 starter HP and 16 cannon damage as **tuning starting values**, with ship collision safeguards. Subsequent PRs: M2-A named captain/ship, persistent campaign and chart/sailing cutscene linking endless battle encounters; M2-B real dock/shop with distinctive sloop/brig/frigate/galleon purchases and varied substantive upgrades (cannons, reload, sails, rudder, lookout, salvage, ram/carpenter); M2-C branching routes, advanced loadouts, crew, enemy encounters; M3 polish. Avoid implementing broad M2 in current PR #4. No change to mouse-free Space-to-fire combat.
+
 ## M1.2 gameplay refinement applies to current PR #4
 
 Before continuing, read [approved M1.2 requirements](BROADSIDE_M12_FEEDBACK.md): starter **one cannon per port/starboard side**, extra guns earned later; responsive **bottom health and dual independent reload status bars**; impact-speed-scaled crash damage from islands, and ship-to-ship collisions damaging **both** vessels exactly once per impact with contact cooldown. Modify existing `feature/broadside-m1-combat` PR #4 (or make a focused follow-up if current PR has merged) rather than refactoring the launcher. Retain M1.1 music, camera, enemy indicators and physics.

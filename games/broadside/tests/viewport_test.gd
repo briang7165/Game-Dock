@@ -111,6 +111,10 @@ func run() -> void:
 	await frames(2)
 	check(game.battle_view.chrome.title.text == "REEFRUNNER PASS","a supplied encounter can reuse the title without changing HUD code")
 	DirAccess.remove_absolute(game.display.settings_path)
+	# Retire the newly created subviewport before shutting down rendering/audio.
+	game.show_menu()
+	await frames(10)
+	OS.delay_msec(150)
 	game.audio.shutdown()
 	OS.delay_msec(150)
 	await frames(3)

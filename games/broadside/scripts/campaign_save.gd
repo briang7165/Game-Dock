@@ -14,7 +14,7 @@ static func clean_name(value: String, fallback: String) -> String:
 	return fallback if result.is_empty() else result
 
 static func fresh(captain: String, ship: String, pennant: int = 0, voyage_seed: int = 0) -> Dictionary:
-	return {"version":VERSION,"captain":clean_name(captain,"Captain Rowan"),"ship":clean_name(ship,"The Wayfarer"),"pennant":clampi(pennant,0,2),"seed":voyage_seed if voyage_seed != 0 else randi_range(1,2147483646),"chapter":1,"stop":0,"attempt":0,"active":false,"route":0,"gold":0,"hull":"sloop","upgrades":{},"health":60.0,"wins":0,"losses":0,"bosses":0}
+	return {"version":VERSION,"captain":clean_name(captain,"Captain Rowan"),"ship":clean_name(ship,"The Wayfarer"),"pennant":clampi(pennant,0,2),"seed":voyage_seed if voyage_seed != 0 else randi_range(1,2147483646),"chapter":1,"stop":0,"attempt":0,"active":false,"route":0,"gold":0,"salvage":0,"weapon":"standard","hull":"sloop","upgrades":{},"health":60.0,"wins":0,"losses":0,"bosses":0}
 
 func valid(value: Variant) -> bool:
 	if not value is Dictionary:
@@ -28,6 +28,14 @@ func valid(value: Variant) -> bool:
 	for key: String in ["pennant","seed","chapter","stop","attempt","route","gold","health","wins","losses","bosses"]:
 		if not (d.get(key) is float or d.get(key) is int) or not is_finite(float(d[key])) or d[key] < 0 or d[key] > 2147483646:
 			return false
+	if not d.get("upgrades") is Dictionary: return false
+	for key: String in d.get("upgrades",{}):
+		if not Shipyard.UPGRADES.has(key): return false
+		var value_rank: Variant = d.upgrades[key]
+		if not (value_rank is int or value_rank is float) or not is_finite(float(value_rank)) or float(value_rank) != floorf(float(value_rank)) or value_rank < 0 or value_rank > int(Shipyard.UPGRADES[key].max): return false
+	if not Shipyard.WEAPONS.has(d.get("weapon","standard")): return false
+	var salvage: Variant = d.get("salvage",0)
+	if not (salvage is int or salvage is float) or not is_finite(float(salvage)) or salvage < 0 or salvage > 1000000000: return false
 	return d.chapter >= 1 and d.stop < 5 and d.route < 3 and d.pennant < 3 and d.hull in ["sloop","brig","frigate","galleon"] and d.get("active") is bool and d.get("upgrades") is Dictionary
 
 func read_file(file_path: String) -> Dictionary:
@@ -101,6 +109,13 @@ func settle(victory: bool, health: float) -> bool:
 			next.chapter = int(next.chapter)%1000000000+1
 	else:
 		next.losses = mini(int(next.losses)+1,1000000000)
-	# M2-A harbor recovery; M2-B replaces this with repair costs and a free tow.
-	next.health = 60.0
+	if victory:
+		var reward: int = 80 + 15*int(data.stop) + (100 if int(data.stop) == 4 else 0)
+		next.gold = mini(1000000000,int(next.gold)+roundi(reward*(1+0.2*Shipyard.rank(data,"cargo"))))
+		next.salvage = mini(1000000000,int(data.get("salvage",0))+2+Shipyard.rank(data,"cargo"))
+		next.health = clampf(health+5*Shipyard.rank(data,"carpenter"),1,Shipyard.hull_for(data).max_health)
+	else:
+		# Rescue never removes upgrades or the hull. Starter gets a full emergency refit.
+		next.gold = maxi(0,int(next.gold)-mini(25,int(next.gold)/4))
+		next.health = maxf(60,Shipyard.hull_for(data).max_health*0.45)
 	return commit(next)

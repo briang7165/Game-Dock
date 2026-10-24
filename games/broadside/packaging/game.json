@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "broadside",
   "name": "Broadside",
-  "version": "0.2.0-m2a",
+  "version": "0.2.1-m2b.1",
   "genre": "Naval combat",
   "description": "Offline one-on-one pirate naval combat. Keyboard sailing and fixed broadsides; original illustrated prototype art.",
   "executable": "Broadside.exe"

@@ -2,6 +2,10 @@
 
 **Start here.** This document is intended to be given verbatim to Codex. Source of truth: [approved Broadside specification](BROADSIDE_DESIGN_DRAFT.md). Tracker: [Game Dock issue #3](https://github.com/briang7165/Game-Dock/issues/3). Last design lock: 2026-10-22.
 
+## Updated authorization: complete the full Endless Odyssey project (2026-10-23)
+
+User has approved current M1.4 playtest feel and authorized **M2-A campaign/identity/voyage, M2-B diverse shipyard/purchases, and M2-C branching/encounter depth**. Earlier staged-stop language remains a code quality and PR review rule, **not a reason to re-ask permission for already-approved M2 design elements**. PR #4 must still be merged/reviewed by user, not automatically. Work against the newest approved design `docs/BROADSIDE_ENDLESS_ODYSSEY.md` and tracker Issue #5. Also fulfill [Windows standalone packaging](BROADSIDE_INSTALL_IN_GAME_DOCK.md) tracked in Issue #6, making Broadside runnable from the Game Dock library without Godot installed. Each milestone needs runnable tested code, avoid giant untested merges.
+
 ## Immediate M1.4 usability feedback: camera / HUD / location names (2026-10-23)
 
 Read [docs/BROADSIDE_M14_VIEWPORT_HUD_LOCATION.md](BROADSIDE_M14_VIEWPORT_HUD_LOCATION.md). Player wants more ocean visible (zoom currently 0.80; test ~0.72), proper non-distorted fullscreen/window handling, health and two reload bars in **dedicated footer space outside world viewport**, not covering rocks/ships/shots, and an encounter-data-driven map location title (first: The Sable Channel). Offscreen enemy arrows must use gameplay rectangle only; do not collide with footer or place banner. Add screenshots and actual tests. Work as incremental M1.4 update to currently open combat PR #4, not campaign PR.

@@ -11,6 +11,10 @@ This repository contains the **Tauri/Rust/React Game Dock launcher** and indepen
 - Report exact tool versions, commands, tests run, and unverified steps. Do not claim native Windows execution based on a headless build.
 - Do not overwrite unexpected local changes; inspect the repository first.
 
+## Full Broadside campaign now authorized (2026-10-23)
+
+The owner has approved the playable M1.4 version and requested **full Endless Odyssey implementation** from Issue #5. The prior stopping condition 'await permission to begin M2' is superseded; implement the already-approved M2-A/B/C features as separate tested, reviewable PRs, respecting branch dependencies and never auto-merging PR #4 or future PRs. See `docs/BROADSIDE_ENDLESS_ODYSSEY.md`. For easy Windows installation, also implement Issue #6: package an actual standalone playable **Broadside.exe + Broadside.pck + game.json** ZIP as a dedicated Broadside artifact, not the Game Dock installer; see `docs/BROADSIDE_INSTALL_IN_GAME_DOCK.md`. Do not falsely claim the full game is built before tests and review.
+
 ## Latest playable-combat visual feedback: Broadside M1.4 (2026-10-23)
 
 Read `docs/BROADSIDE_M14_VIEWPORT_HUD_LOCATION.md`: modest camera zoom-out (0.80 → ~0.72 test), responsive **windowed and fullscreen** framing, separate *reserved* gameplay viewport **above** a bottom-anchored HUD (no ocean drawn behind meters), and a location name card for **The Sable Channel** driven by encounter data. Enemy offscreen arrows must stay in the playfield. Implement as a narrowly scoped improvement to existing PR #4, not as an excuse to begin M2. Preserve M1.3 combat and audio.

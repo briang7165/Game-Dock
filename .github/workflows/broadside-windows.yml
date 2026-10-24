@@ -1,0 +1,50 @@
+name: Broadside playable Windows ZIP
+on:
+  pull_request:
+    paths: ['games/broadside/**', '.github/workflows/broadside-windows.yml', 'docs/BROADSIDE_INSTALL_IN_GAME_DOCK.md']
+  push:
+    branches: [main]
+    paths: ['games/broadside/**', '.github/workflows/broadside-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned official Godot and matching templates
+        shell: pwsh
+        run: |
+          $release = 'https://github.com/godotengine/godot-builds/releases/download/4.5.2-stable'
+          $archives = @{
+            'Godot_v4.5.2-stable_win64.exe.zip' = 'b21115cf3620438e17959d13946bf9c7dceabb6ff71ed32a68996a21e08615edd2d1a3d25641bb3e260d084b31f500231aa59fcf026a5228bcc20ac4e8bade60'
+            'Godot_v4.5.2-stable_export_templates.tpz' = '003aa33743f58fb657717f090fc872ed3975e48d08a6012201a2259970d458a63d4d8a83090585307c23455ebfa4e6e0050e1057761c34863536095e3fcfab6c'
+          }
+          foreach ($name in $archives.Keys) {
+            $file = Join-Path $env:RUNNER_TEMP $name
+            Invoke-WebRequest "$release/$name" -OutFile $file
+            if ((Get-FileHash $file -Algorithm SHA512).Hash.ToLowerInvariant() -ne $archives[$name]) { throw "Checksum mismatch: $name" }
+          }
+          Expand-Archive "$env:RUNNER_TEMP/Godot_v4.5.2-stable_win64.exe.zip" "$env:RUNNER_TEMP/godot"
+          [IO.Compression.ZipFile]::ExtractToDirectory("$env:RUNNER_TEMP/Godot_v4.5.2-stable_export_templates.tpz", "$env:RUNNER_TEMP/templates")
+          $destination = "$env:APPDATA/Godot/export_templates/4.5.2.stable"
+          New-Item -ItemType Directory -Force $destination | Out-Null
+          Copy-Item "$env:RUNNER_TEMP/templates/templates/*" $destination
+          python -m pip install jsonschema==4.26.0
+      - name: Import, regression suites and manifest
+        shell: pwsh
+        run: ./games/broadside/tests/run.ps1 -Godot "$env:RUNNER_TEMP/godot/Godot_v4.5.2-stable_win64_console.exe"
+      - name: Export, smoke test and package matched game files
+        shell: pwsh
+        run: ./games/broadside/packaging/build-windows.ps1 -Godot "$env:RUNNER_TEMP/godot/Godot_v4.5.2-stable_win64_console.exe" -OutputDirectory "$env:RUNNER_TEMP/broadside-package"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: broadside-windows-x64
+          path: ${{ runner.temp }}/broadside-package/Broadside-windows-x64-*.zip
+          if-no-files-found: error
+          retention-days: 30

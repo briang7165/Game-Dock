@@ -14,6 +14,7 @@ func _physics_process(delta: float) -> void:
 		position = hit.position
 		if hit.collider is BroadsideShip:
 			hit.collider.take_damage(stats.damage)
+			hit.collider.rigging_slow = maxf(hit.collider.rigging_slow,stats.slow_seconds)
 			get_parent().sound("wood", position)
 		else:
 			get_parent().sound("rock", position)

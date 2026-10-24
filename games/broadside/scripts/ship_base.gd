@@ -9,6 +9,7 @@ var pennant: int = 0
 var ship_class: String = "sloop"
 var hull_size := Vector2.ONE
 var prow_rank: int = 0
+var rigging_slow: float = 0.0
 var health: float
 var speed: float = 0.0
 var turn_velocity: float = 0.0
@@ -61,17 +62,19 @@ func motion_velocity() -> Vector2:
 func step(delta: float, throttle: float, steering: float) -> void:
 	if dead:
 		return
+	rigging_slow = maxf(0,rigging_slow-delta)
+	var rigging_factor: float = 0.6 if rigging_slow > 0 else 1.0
 	port.tick(delta)
 	starboard.tick(delta)
 	hit_flash = maxf(0.0, hit_flash - delta)
 	var old_forward: Vector2 = Vector2.UP.rotated(rotation)
 	var effectiveness: float = lerpf(hull.stationary_steering, 1.0, clampf(absf(speed) / hull.top_speed, 0.0, 1.0))
-	var desired_turn: float = steering * hull.turn_rate * effectiveness
+	var desired_turn: float = steering * hull.turn_rate * effectiveness * rigging_factor
 	turn_velocity = move_toward(turn_velocity, desired_turn, hull.rudder_acceleration * delta)
 	rotation += turn_velocity * delta
 	var forward: Vector2 = Vector2.UP.rotated(rotation)
 	if throttle > 0.0:
-		speed = move_toward(speed, hull.top_speed * throttle, hull.acceleration * delta)
+		speed = move_toward(speed, hull.top_speed * throttle * rigging_factor, hull.acceleration * delta)
 	elif throttle < 0.0:
 		speed = move_toward(speed, -hull.reverse_speed, hull.braking * delta)
 	else:
@@ -106,7 +109,7 @@ func fire_loaded() -> int:
 		for index: int in range(guns.gun_count):
 			var projectile: Node2D = preload("res://scenes/Cannonball.tscn").instantiate()
 			var angle: float = deg_to_rad(guns.spread_degrees) * (float(index) - float(guns.gun_count - 1) / 2.0)
-			projectile.position = to_global(battery.muzzle(index))
+			projectile.position = to_global(battery.muzzle(index)*Vector2(hull_size.x,1))
 			projectile.direction = Vector2(battery.side, 0).rotated(rotation + angle)
 			projectile.source = self
 			projectile.stats = guns
@@ -142,7 +145,7 @@ func _draw() -> void:
 		if battery == null:
 			continue
 		for index: int in range(guns.gun_count):
-			var muzzle: Vector2 = battery.muzzle(index)
+			var muzzle: Vector2 = battery.muzzle(index)*Vector2(hull_size.x,1)
 			muzzle.x -= battery.side * 5.0 * clampf((battery.remaining - guns.reload_seconds + 0.25) / 0.25, 0.0, 1.0)
 			draw_line(muzzle - Vector2(battery.side * 10,0), muzzle, Color("202d35"), 6.0, true)
 			if telegraph > 0.0:

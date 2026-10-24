@@ -1,5 +1,6 @@
 extends StaticBody2D
 @export var radius: float = 80.0
+var theme: int = 0
 var rim: PackedVector2Array
 
 func _ready() -> void:
@@ -21,11 +22,11 @@ func _draw() -> void:
 	draw_colored_polygon(foam, Color("386f76"))
 	foam.append(foam[0])
 	draw_polyline(foam, Color("85b6ad"), 3.0, true)
-	draw_colored_polygon(rim, Color("494f50"))
+	draw_colored_polygon(rim, [Color("494f50"),Color("443f46"),Color("59686a"),Color("383f50")][theme])
 	var inner := PackedVector2Array()
 	for point: Vector2 in rim:
 		inner.append(point * 0.78 + Vector2(-5,-7))
 	draw_colored_polygon(inner, Color("899185"))
 	for i: int in range(0, 12, 2):
 		draw_colored_polygon(PackedVector2Array([Vector2(-10,-12),inner[i],inner[(i+1)%12]]),Color("a6aa91") if i % 4 == 0 else Color("687b71"))
-	draw_circle(Vector2(-12,-15), radius * 0.22, Color("526b51"))
+	draw_circle(Vector2(-12,-15), radius * 0.22, [Color("526b51"),Color("9c684c"),Color("79908a"),Color("526176")][theme])

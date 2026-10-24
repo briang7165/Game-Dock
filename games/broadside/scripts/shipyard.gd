@@ -17,6 +17,7 @@ const UPGRADES: Dictionary = {
 	"cargo":{"price":100,"max":3,"name":"Salvage hold","note":"Recover +20% gold and +1 salvage per victory per rank."},
 	"armor":{"price":120,"max":3,"name":"Hull plating","note":"+18 hull, but -4% speed and -3% turning per rank."}}
 const WEAPONS: Dictionary = {
+	"chain":{"price":220,"note":"Chain shot: 10 damage; slows rigging for 2 seconds, cannot stack duration."},
 	"standard":{"price":0,"note":"Round shot: 16 damage, standard range and reload."},
 	"long":{"price":180,"note":"Long guns: +35% range, but reload 25% slower."},
 	"carronade":{"price":180,"note":"Carronades: 23 damage, but -35% range and +10% reload time."}}
@@ -33,6 +34,7 @@ static func hull_for(data: Dictionary) -> HullStats:
 	hull.top_speed = float(spec.speed)*(1+0.07*rank(data,"sails"))*(1-0.04*rank(data,"armor"))
 	hull.turn_rate = float(spec.turn)*(1+0.08*rank(data,"rudder"))*(1-0.03*rank(data,"armor"))
 	hull.acceleration = float(spec.accel)*(1+0.06*rank(data,"sails"))
+	if data.get("crew","none") == "navigator": hull.top_speed *= 1.08
 	hull.rudder_acceleration *= 1+0.12*rank(data,"rudder")
 	return hull
 
@@ -40,7 +42,11 @@ static func guns_for(data: Dictionary) -> CannonStats:
 	var guns: CannonStats = preload("res://data/player_sloop_cannons.tres").duplicate()
 	guns.gun_count = mini(int(HULLS[data.hull].guns)+rank(data,"cannons"),int(HULLS[data.hull].capacity))
 	guns.reload_seconds *= 1-0.08*rank(data,"gunners")
+	if data.get("crew","none") == "gunner": guns.reload_seconds *= 0.9
 	match data.get("weapon","standard"):
+		"chain":
+			guns.damage = 10
+			guns.slow_seconds = 2
 		"long":
 			guns.projectile_lifetime *= 1.35
 			guns.reload_seconds *= 1.25

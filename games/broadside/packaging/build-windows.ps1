@@ -7,7 +7,7 @@ $output = [IO.Path]::GetFullPath($OutputDirectory)
 $payload = Join-Path $output ('payload-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force $payload | Out-Null
 $exe = Join-Path $payload 'Broadside.exe'
-$lines = & $Godot --headless --path $project --export-release 'Windows Desktop' $exe 2>&1
+$lines = & $Godot --headless --accessibility disabled --path $project --export-release 'Windows Desktop' $exe 2>&1
 $code = $LASTEXITCODE
 $lines | Write-Output
 if ($code -ne 0 -or $lines -match 'ERROR:|SCRIPT ERROR:') { throw 'Windows export failed' }
@@ -17,7 +17,7 @@ foreach ($name in @('Broadside.exe','Broadside.pck','game.json')) {
 }
 $log = Join-Path $payload 'smoke.log'
 $harness = Join-Path $project 'tests/boot_test.gd'
-$process = Start-Process -FilePath $exe -ArgumentList @('--headless','--script',('"' + $harness + '"'),'--log-file',('"' + $log + '"')) -WindowStyle Hidden -PassThru
+$process = Start-Process -FilePath $exe -ArgumentList @('--headless','--accessibility','disabled','--script',('"' + $harness + '"'),'--log-file',('"' + $log + '"')) -WindowStyle Hidden -PassThru
 if (-not $process.WaitForExit(60000)) { $process.Kill(); throw 'Export smoke test timed out' }
 $text = Get-Content $log -Raw
 if ($process.ExitCode -ne 0 -or $text -match 'ERROR:|FAIL:' -or $text -notmatch 'PASS: main scene boot') { throw 'Exported executable smoke failed' }

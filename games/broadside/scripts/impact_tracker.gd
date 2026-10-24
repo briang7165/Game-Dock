@@ -54,9 +54,11 @@ func report(ship: BroadsideShip, other: CollisionObject2D, normal: Vector2, befo
 	if damage <= 0.0:
 		return 0.0
 	# Record pair first; both reports and simultaneous lethal hits are safe.
-	ship.take_damage(damage)
 	if other is BroadsideShip:
-		other.take_damage(damage)
+		ship.take_damage(damage*(1-0.15*ship.prow_rank)*(1+0.2*other.prow_rank))
+		other.take_damage(damage*(1-0.15*other.prow_rank)*(1+0.2*ship.prow_rank))
+	else:
+		ship.take_damage(damage)
 	ship.arena.effect(at,Color("e5c89b"),18.0+damage)
 	ship.arena.sound("wood" if other is BroadsideShip else "rock",at)
 	return damage

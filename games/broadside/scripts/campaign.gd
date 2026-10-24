@@ -149,7 +149,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and not event.is_echo():
 		if travelling:
 			enter_battle()
-		elif game.screen in ["identity","chart","harbor","confirm_new","save_error"]:
+		elif game.screen in ["identity","chart","harbor","confirm_new","save_error","purchase"]:
 			game.show_menu()
 		get_viewport().set_input_as_handled()
 
@@ -162,7 +162,8 @@ func enter_battle() -> void:
 	encounter.location_subtitle = "Chapter %d • %s" % [int(save.data.chapter),"Tidewarden's challenge" if int(save.data.stop) == 4 else "The voyage continues"]
 	game.start_battle(encounter)
 	in_battle = true
-	game.arena.player.pennant = int(save.data.pennant)
+	Shipyard.apply(game.arena.player,save.data)
+	game.arena.camera.zoom *= 1.0/(1+0.05*Shipyard.rank(save.data,"lookout"))
 	if int(save.data.stop) == 4:
 		game.arena.enemy.hull = game.arena.enemy.hull.duplicate()
 		game.arena.enemy.hull.max_health = 78
@@ -180,16 +181,56 @@ func finish(victory: bool) -> void:
 		return
 	reset_screen("campaign_result")
 	game.audio.play_effect("victory" if victory else "defeat")
-	game.menu("Victory at sea" if victory else "Rescued by harbor hands",identity()+"\n"+("Destination cleared. Your voyage continues." if victory else "Your captain and ship are safe. Free refit; retry this destination."),{"Safe harbor":show_harbor,"Chart of the Seas":show_chart,"Main menu":game.show_menu})
+	game.menu("Victory at sea" if victory else "Rescued by harbor hands",identity()+"\n"+("Destination cleared. Your voyage continues." if victory else "Your captain and ship are safe. Emergency refit; retry this destination."),{"Safe harbor":show_harbor,"Chart of the Seas":show_chart,"Main menu":game.show_menu})
 
 func retreat() -> void:
 	finish(false)
 
 func show_harbor() -> void:
 	var column := reset_screen("harbor")
-	column.add_child(game.make_label("Lantern Harbor",32))
+	column.add_child(game.make_label("Lantern Harbor — Shipyard",30))
 	column.add_child(game.make_label(identity(),20))
-	column.add_child(game.make_label("Voyage journal • %d victories • %d rescues • %d bosses\nYour ship is refitted and ready. Shipyard trade opens in the next milestone." % [int(save.data.wins),int(save.data.losses),int(save.data.bosses)],18))
+	column.add_child(game.make_label("Gold %d  •  Salvage %d  •  Hull %d / %d" % [int(save.data.gold),int(save.data.get("salvage",0)),int(save.data.health),int(Shipyard.hull_for(save.data).max_health)],20))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(900,340)
+	column.add_child(scroll)
+	var stock := VBoxContainer.new()
+	stock.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(stock)
+	button(stock,"Repair all hull — %d gold" % Shipyard.price(save.data,"repair",""),preview_purchase.bind("repair",""))
+	button(stock,"Exchange salvage — 12 gold each",sell_salvage)
+	for id: String in Shipyard.HULLS:
+		button(stock,"%s — %d gold • %s" % [id.capitalize(),int(Shipyard.HULLS[id].price),Shipyard.HULLS[id].note],preview_purchase.bind("hull",id))
+	for id: String in Shipyard.UPGRADES:
+		button(stock,"%s [%d/%d] — %d gold" % [Shipyard.UPGRADES[id].name,Shipyard.rank(save.data,id),int(Shipyard.UPGRADES[id].max),Shipyard.price(save.data,"upgrade",id)],preview_purchase.bind("upgrade",id))
+	for id: String in Shipyard.WEAPONS:
+		button(stock,"%s guns — %d gold • %s" % [id.capitalize(),int(Shipyard.WEAPONS[id].price),Shipyard.WEAPONS[id].note],preview_purchase.bind("weapon",id))
+	status = game.make_label(save.error if not save.error.is_empty() else "Equipment transfers to your new hull; extra guns respect its port capacity.",16)
+	column.add_child(status)
 	button(column,"Chart next passage",show_chart).grab_focus()
 	button(column,"Captain's papers",show_identity.bind(true))
 	button(column,"Main menu",game.show_menu)
+
+func preview_purchase(kind: String, id: String) -> void:
+	var next: Dictionary = Shipyard.preview(save.data,kind,id)
+	if next.is_empty():
+		status.text = "Unavailable: insufficient gold, already fitted, maximum rank, or encounter in progress."
+		return
+	var before: HullStats = Shipyard.hull_for(save.data)
+	var after: HullStats = Shipyard.hull_for(next)
+	var guns: CannonStats = Shipyard.guns_for(next)
+	var note: String = str(Shipyard.UPGRADES[id].note) if kind == "upgrade" else (str(Shipyard.HULLS[id].note) if kind == "hull" else "")
+	reset_screen("purchase")
+	game.menu("Shipwright's estimate", "%s\nCost %d gold • Remaining %d\nHull %d → %d • Speed %.0f → %.0f • Turn %.2f → %.2f\n%d guns per side • %.2fs reload • %.0f range\n%s" % [identity(),Shipyard.price(save.data,kind,id),int(next.gold),int(before.max_health),int(after.max_health),before.top_speed,after.top_speed,before.turn_rate,after.turn_rate,guns.gun_count,guns.reload_seconds,guns.projectile_speed*guns.projectile_lifetime,note],{"Back to shipyard":show_harbor,"Confirm purchase":func() -> void:
+		Shipyard.purchase(save,kind,id)
+		show_harbor()})
+
+func sell_salvage() -> void:
+	if save.data.active:
+		status.text = "Finish the current encounter before trading."
+		return
+	var next: Dictionary = save.data.duplicate(true)
+	next.gold = mini(1000000000,int(next.gold)+int(next.get("salvage",0))*12)
+	next.salvage = 0
+	save.commit(next)
+	show_harbor()

@@ -6,6 +6,9 @@ signal salvo(ship: BroadsideShip, side: float)
 @export var guns: CannonStats = preload("res://data/cannons.tres")
 @export var enemy: bool = false
 var pennant: int = 0
+var ship_class: String = "sloop"
+var hull_size := Vector2.ONE
+var prow_rank: int = 0
 var health: float
 var speed: float = 0.0
 var turn_velocity: float = 0.0
@@ -30,6 +33,14 @@ func _ready() -> void:
 	shape.shape = capsule
 	add_child(shape)
 	hull_shape = shape
+
+func resize_hull(size: Vector2) -> void:
+	hull_size = size
+	var capsule := CapsuleShape2D.new()
+	capsule.radius = 20*size.x
+	capsule.height = 78*size.y
+	hull_shape.shape = capsule
+	queue_redraw()
 
 func set_cannon_loadout(definition: CannonStats) -> bool:
 	if definition == null or definition.gun_count < 1 or definition.gun_count > hull.cannon_capacity:
@@ -118,6 +129,8 @@ func take_damage(amount: float) -> void:
 func _draw() -> void:
 	# Original layered ink/wood/canvas illustration. Forward is local -Y.
 	var outline := PackedVector2Array([Vector2(0,-48), Vector2(18,-29), Vector2(23,12), Vector2(15,37), Vector2(-15,37), Vector2(-23,12), Vector2(-18,-29)])
+	for i: int in range(outline.size()):
+		outline[i] *= hull_size
 	draw_colored_polygon(outline, Color("182e32"))
 	var inner := PackedVector2Array()
 	for point: Vector2 in outline:
@@ -139,6 +152,16 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(-21,-15),Vector2(19,-15),Vector2(21,8),Vector2(0,12),Vector2(-19,7)]), Color("f1e1b8"))
 	draw_line(Vector2(0,-16),Vector2(0,13),Color("aa9b76"),1.4,true)
 	draw_colored_polygon(PackedVector2Array([Vector2(0,-30),Vector2(18,-25),Vector2(0,-20)]), Color("c55748") if enemy else [Color("42c7b7"),Color("e8c861"),Color("e6e0ce")][pennant])
+	if ship_class != "sloop":
+		# Extra masts and raised stern distinguish purchased hulls without replacing starter art.
+		for mast_y: float in [-34.0,30.0] if ship_class in ["frigate","galleon"] else [30.0]:
+			draw_line(Vector2(0,mast_y-10),Vector2(0,mast_y+12),Color("4c3529"),3,true)
+			draw_colored_polygon(PackedVector2Array([Vector2(-18,mast_y-6),Vector2(18,mast_y-6),Vector2(20,mast_y+8),Vector2(-20,mast_y+8)]),Color("e5d4a4"))
+		if ship_class == "galleon":
+			draw_rect(Rect2(-20,43,40,10),Color("c79d52"))
+	if prow_rank > 0:
+		draw_line(Vector2(-9,-39*hull_size.y),Vector2(0,-50*hull_size.y),Color("abb7b6"),4,true)
+		draw_line(Vector2(0,-50*hull_size.y),Vector2(9,-39*hull_size.y),Color("abb7b6"),4,true)
 	if health < hull.max_health * 0.5:
 		draw_line(Vector2(-12,23), Vector2(8,28), Color("332b27"),3.0,true)
 	if absf(speed) > 20:

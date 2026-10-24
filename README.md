@@ -27,6 +27,9 @@ No additional account or subscription is needed to run the installed application
 - [GitHub Issue #3](https://github.com/briang7165/Game-Dock/issues/3) — implementation tracker.
 - [Endless Odyssey campaign design](docs/BROADSIDE_ENDLESS_ODYSSEY.md) — shorter early battles, captain/ship names, skippable voyage chart, endless adventure chapters, tactical shipyard and varied upgrades.
 - [GitHub Issue #5](https://github.com/briang7165/Game-Dock/issues/5) — staged M2 campaign/shipyard build, separate from current combat PR #4.
+- [Install Broadside in Game Dock](docs/BROADSIDE_INSTALL_IN_GAME_DOCK.md) — export/copy the complete Windows game into the library and click Play.
+- [GitHub Issue #6](https://github.com/briang7165/Game-Dock/issues/6) — publish a dedicated playable Broadside Windows ZIP artifact and easy install method.
+
 - [AGENTS.md](AGENTS.md) — repository instructions for coding agents.
 
 ## Releasing

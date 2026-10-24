@@ -11,7 +11,7 @@ func run() -> void:
 	var save := CampaignSave.new()
 	save.path = "user://shipyard_test.json"
 	save.commit(CampaignSave.fresh("Test","Test",0,42))
-	check(Shipyard.hull_for(save.data).max_health == 60 and Shipyard.guns_for(save.data).gun_count == 1,"starter stays fragile with one gun per side")
+	check(Shipyard.hull_for(save.data).max_health == 60 and Shipyard.guns_for(save.data).gun_count == 1 and Shipyard.guns_for(save.data).damage == 16,"starter stays fragile with one gun per side")
 	check(not Shipyard.purchase(save,"hull","brig") and save.data.gold == 0,"unaffordable ship cannot charge or change hull")
 	save.begin_encounter()
 	save.settle(true,20)

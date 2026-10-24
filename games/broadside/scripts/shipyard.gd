@@ -37,7 +37,7 @@ static func hull_for(data: Dictionary) -> HullStats:
 	return hull
 
 static func guns_for(data: Dictionary) -> CannonStats:
-	var guns: CannonStats = preload("res://data/cannons.tres").duplicate()
+	var guns: CannonStats = preload("res://data/player_sloop_cannons.tres").duplicate()
 	guns.gun_count = mini(int(HULLS[data.hull].guns)+rank(data,"cannons"),int(HULLS[data.hull].capacity))
 	guns.reload_seconds *= 1-0.08*rank(data,"gunners")
 	match data.get("weapon","standard"):

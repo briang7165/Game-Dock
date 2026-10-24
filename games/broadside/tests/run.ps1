@@ -9,7 +9,9 @@ function Invoke-GodotCheck([string[]]$ExtraArgs) {
         throw "Godot validation failed (exit $code)."
     }
 }
-Invoke-GodotCheck @('--editor', '--quit')
+# Allow editor import workers to settle before shutdown on Windows CI.
+# Keep every nonzero exit and engine error fatal; this is not a retry/ignore.
+Invoke-GodotCheck @('--editor', '--quit-after', '120', '--max-fps', '60')
 Invoke-GodotCheck @('--script', 'res://tests/boot_test.gd')
 Invoke-GodotCheck @('--fixed-fps', '60', '--script', 'res://tests/combat_test.gd')
 Invoke-GodotCheck @('--fixed-fps', '60', '--script', 'res://tests/ai_test.gd')

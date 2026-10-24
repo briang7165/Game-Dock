@@ -14,7 +14,7 @@ static func clean_name(value: String, fallback: String) -> String:
 	return fallback if result.is_empty() else result
 
 static func fresh(captain: String, ship: String, pennant: int = 0, voyage_seed: int = 0) -> Dictionary:
-	return {"version":VERSION,"captain":clean_name(captain,"Captain Rowan"),"ship":clean_name(ship,"The Wayfarer"),"pennant":clampi(pennant,0,2),"seed":voyage_seed if voyage_seed != 0 else randi_range(1,2147483646),"chapter":1,"stop":0,"attempt":0,"active":false,"route":0,"gold":0,"salvage":0,"weapon":"standard","hull":"sloop","upgrades":{},"health":60.0,"wins":0,"losses":0,"bosses":0}
+	return {"version":VERSION,"captain":clean_name(captain,"Captain Rowan"),"ship":clean_name(ship,"The Wayfarer"),"pennant":clampi(pennant,0,2),"seed":voyage_seed if voyage_seed != 0 else randi_range(1,2147483646),"chapter":1,"stop":0,"attempt":0,"active":false,"route":0,"gold":0,"salvage":0,"weapon":"standard","crew":"none","ships_sunk":0,"gold_earned":0,"journal":[],"hull":"sloop","upgrades":{},"health":60.0,"wins":0,"losses":0,"bosses":0}
 
 func valid(value: Variant) -> bool:
 	if not value is Dictionary:
@@ -28,7 +28,16 @@ func valid(value: Variant) -> bool:
 	for key: String in ["pennant","seed","chapter","stop","attempt","route","gold","health","wins","losses","bosses"]:
 		if not (d.get(key) is float or d.get(key) is int) or not is_finite(float(d[key])) or d[key] < 0 or d[key] > 2147483646:
 			return false
+	for key: String in ["pennant","seed","chapter","stop","attempt","route","gold","wins","losses","bosses"]:
+		if float(d[key]) != floorf(float(d[key])): return false
 	if not d.get("upgrades") is Dictionary: return false
+	if not VoyageDirector.CREW.has(d.get("crew","none")): return false
+	if not d.get("journal",[]) is Array or d.get("journal",[]).size() > 8: return false
+	for entry: Variant in d.get("journal",[]):
+		if not entry is String or entry.length() > 180: return false
+	for key: String in ["ships_sunk","gold_earned"]:
+		var count: Variant = d.get(key,0)
+		if not (count is int or count is float) or not is_finite(float(count)) or count < 0 or count > 1000000000: return false
 	for key: String in d.get("upgrades",{}):
 		if not Shipyard.UPGRADES.has(key): return false
 		var value_rank: Variant = d.upgrades[key]
@@ -75,6 +84,9 @@ func commit(next: Dictionary) -> bool:
 	file.store_string(JSON.stringify(next))
 	file.flush()
 	file.close()
+	if read_file(path+".tmp").is_empty():
+		error = "Save verification failed; previous files preserved."
+		return false
 	# Never replace the good backup with a corrupt main file.
 	if not read_file(path).is_empty():
 		if DirAccess.copy_absolute(path,path+".bak") != OK:
@@ -90,11 +102,11 @@ func begin_encounter(route: int = 0) -> bool:
 	var next: Dictionary = data.duplicate(true)
 	if not next.active:
 		next.attempt = (int(next.attempt)+1) % 1000000000
+		next.route = clampi(route,0,2)
 	next.active = true
-	next.route = clampi(route,0,2)
 	return commit(next)
 
-func settle(victory: bool, health: float) -> bool:
+func settle(victory: bool, health: float, sunk: int = 1) -> bool:
 	if data.is_empty() or not data.active:
 		return false
 	var next: Dictionary = data.duplicate(true)
@@ -110,12 +122,19 @@ func settle(victory: bool, health: float) -> bool:
 	else:
 		next.losses = mini(int(next.losses)+1,1000000000)
 	if victory:
-		var reward: int = 80 + 15*int(data.stop) + (100 if int(data.stop) == 4 else 0)
-		next.gold = mini(1000000000,int(next.gold)+roundi(reward*(1+0.2*Shipyard.rank(data,"cargo"))))
-		next.salvage = mini(1000000000,int(data.get("salvage",0))+2+Shipyard.rank(data,"cargo"))
-		next.health = clampf(health+5*Shipyard.rank(data,"carpenter"),1,Shipyard.hull_for(data).max_health)
+		var reward: int = VoyageDirector.reward(data)
+		next.gold = mini(1000000000,int(next.gold)+reward)
+		next.gold_earned = mini(1000000000,int(data.get("gold_earned",0))+reward)
+		next.salvage = mini(1000000000,int(data.get("salvage",0))+2+Shipyard.rank(data,"cargo")+int(data.route))
+		next.health = clampf(health+5*Shipyard.rank(data,"carpenter")+(8 if data.get("crew","none") == "carpenter" else 0),1,Shipyard.hull_for(data).max_health)
 	else:
 		# Rescue never removes upgrades or the hull. Starter gets a full emergency refit.
 		next.gold = maxi(0,int(next.gold)-mini(25,int(next.gold)/4))
 		next.health = maxf(60,Shipyard.hull_for(data).max_health*0.45)
+		next.salvage = mini(1000000000,int(data.get("salvage",0))+1)
+	next.ships_sunk = mini(1000000000,int(data.get("ships_sunk",0))+maxi(0,sunk))
+	var entries: Array = data.get("journal",[]).duplicate()
+	entries.append("Chapter %d • %s • %s%s" % [int(data.chapter),VoyageDirector.ROUTES[int(data.route)],"Victory" if victory else "Rescued",(" against "+VoyageDirector.encounter(data).boss_name) if int(data.stop) == 4 else ""])
+	while entries.size() > 8: entries.pop_front()
+	next.journal = entries
 	return commit(next)

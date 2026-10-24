@@ -6,3 +6,5 @@ extends Resource
 @export var projectile_lifetime: float = 2.9
 @export var damage: float = 12.0
 @export var spread_degrees: float = 2.0
+
+@export var slow_seconds: float = 0.0

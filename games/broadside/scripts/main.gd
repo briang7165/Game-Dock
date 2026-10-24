@@ -96,7 +96,7 @@ func show_menu() -> void:
 		arena = null
 	clear_ui()
 	screen = "menu"
-	menu("The Sable Channel", "A one-on-one naval duel • M1.4 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail — practice": start_battle,"New voyage": campaign.begin_new,"Continue voyage": campaign.continue_game,"Settings": show_settings,"Quit": quit_game})
+	menu("Endless Odyssey", "Name your captain. Chart the seas. Build your legend.\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail — practice": start_battle,"New voyage": campaign.begin_new,"Continue voyage": campaign.continue_game,"Settings": show_settings,"Quit": quit_game})
 
 func start_battle(encounter: EncounterStats = null) -> void:
 	campaign.in_battle = false
@@ -131,7 +131,7 @@ func _process(delta: float) -> void:
 	audio.set_motion(absf(arena.player.speed)/arena.player.hull.top_speed if is_instance_valid(arena) else 0.0,delta)
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("pause") and not event.is_echo():
+	if event.is_action_pressed("pause") and not event.is_echo() and screen in ["battle","pause","result","settings"]:
 		if screen == "battle":
 			pause_battle()
 		elif screen == "pause":

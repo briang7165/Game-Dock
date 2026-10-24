@@ -10,7 +10,8 @@ func _draw() -> void:
 	var inverse: Transform2D = get_viewport().get_canvas_transform().affine_inverse()
 	var visible := Rect2(inverse * Vector2.ZERO, Vector2.ZERO)
 	visible = visible.expand(inverse * get_viewport_rect().size).grow(100)
-	draw_rect(visible,Color("134655"))
+	var theme: int = get_parent().encounter.theme
+	draw_rect(visible,[Color("134655"),Color("243f4d"),Color("3b5961"),Color("223748")][theme])
 	# Deterministic brush-like bands, no asset downloads or per-frame randomness.
 	for row: int in range(floori(visible.position.y/83)-1,ceili(visible.end.y/83)+1):
 		for col: int in range(floori(visible.position.x/90)-1,ceili(visible.end.x/90)+1):

@@ -37,4 +37,12 @@ func _process(delta: float) -> void:
 	var alpha: float = smoothstep(0,0.3,elapsed) * (1.0-smoothstep(2.0,2.8,elapsed))
 	title.modulate.a = alpha
 	subtitle.modulate.a = alpha
-	enemy_label.text = "HOSTILE SLOOP   %d / %d HP" % [ceili(arena.enemy.health),arena.enemy.hull.max_health]
+	if not arena.encounter.campaign:
+		enemy_label.text = "HOSTILE SLOOP   %d / %d HP" % [ceili(arena.enemy.health),arena.enemy.hull.max_health]
+	else:
+		var living: int = 0
+		for hostile: BroadsideShip in arena.enemies:
+			if not hostile.dead: living += 1
+		enemy_label.text = "%d HOSTILE%s REMAIN" % [living,"S" if living != 1 else ""]
+		if not arena.encounter.boss_name.is_empty():
+			enemy_label.text += "\n%s: %d HP" % [arena.encounter.boss_name,ceili(arena.enemy.health)]

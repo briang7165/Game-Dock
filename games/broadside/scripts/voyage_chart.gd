@@ -21,23 +21,44 @@ func _draw() -> void:
 			rock.append(at+Vector2.from_angle(angle*TAU/8)*rng.randf_range(9,23))
 		draw_colored_polygon(rock,Color("8b9872"))
 		draw_polyline(rock,Color("66785e"),2,true)
+	for wave: int in range(14):
+		var origin := Vector2(35+wave*61,38+sin(wave*2.7)*17)
+		draw_arc(origin,14,0.3,2.8,9,Color("98a68a"),1.2,true)
 	for i: int in range(4):
 		for dot: int in range(20):
 			draw_circle(point(i).lerp(point(i+1),dot/20.0),1.8,Color("886d4c"))
 	var font: Font = ThemeDB.fallback_font
 	for i: int in range(5):
 		var at: Vector2 = point(i)
-		draw_circle(at,12,Color("814735") if i == 4 else Color("386c73"))
+		draw_circle(at,12,Color("6a7753") if i < int(state.get("stop",0)) else (Color("814735") if i == 4 else Color("386c73")))
 		draw_circle(at,5,Color("edd9a8"))
-		var label: String = NAMES[i] if i != 4 else "Stormwatch • BOSS"
+		var destination: Dictionary = state.duplicate(true)
+		destination.stop = i
+		var place: EncounterStats = VoyageDirector.encounter(destination)
+		var label: String = place.location_name if i != 4 else "Flagship • BOSS"
 		draw_string(font,at+Vector2(-65,35),label,HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color("403b2b"))
 	var stop: int = int(state.get("stop",0))
+	# Three visible alternative lanes reconnect at the destination; chart choices
+	# select risk/reward, not an irreversible progression dead end.
+	var begin: Vector2 = point(maxi(0,stop-1)) if stop > 0 else Vector2(20,270)
+	for route: int in range(3):
+		var via: Vector2 = begin.lerp(point(stop),0.5)+Vector2(0,(route-1)*45)
+		for dot: int in range(16):
+			var t: float = dot/15.0
+			var route_point: Vector2 = begin.lerp(via,t).lerp(via.lerp(point(stop),t),t)
+			draw_circle(route_point,2,Color("9b573e") if route == int(state.get("route",0)) else Color("9d926f"))
 	var at: Vector2 = point(maxi(0,stop-1)).lerp(point(stop),travel if travel > 0 else 1.0)
 	if stop == 0 and travel > 0:
 		at = Vector2(20,270).lerp(point(0),travel)
 	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-21),at+Vector2(12,12),at+Vector2(-12,12)]),Color("69472f"))
 	draw_line(at+Vector2(0,-16),at+Vector2(0,8),Color("403b2b"),2)
 	draw_colored_polygon(PackedVector2Array([at+Vector2(1,-15),at+Vector2(16,2),at+Vector2(1,2)]),Color("fff0c8"))
+	var hull_id: String = str(state.get("hull","sloop"))
+	if hull_id != "sloop":
+		for mast: int in range(2 if hull_id in ["frigate","galleon"] else 1):
+			var offset := Vector2(-9-mast*9,3+mast*3)
+			draw_line(at+offset+Vector2(0,-14),at+offset+Vector2(0,8),Color("403b2b"),2)
+			draw_colored_polygon(PackedVector2Array([at+offset+Vector2(1,-13),at+offset+Vector2(12,1),at+offset+Vector2(1,1)]),Color("fff0c8"))
 	# Original compass rose, chart-only illustration.
 	var compass := Vector2(size.x-55,45)
 	draw_arc(compass,22,0,TAU,32,Color("886d4c"),1,true)

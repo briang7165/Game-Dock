@@ -10,6 +10,7 @@ var hud: Control
 var panel: Control
 var screen: String = "menu"
 var audio: Node
+var campaign: Node
 var settings_origin: String = "menu"
 
 func _ready() -> void:
@@ -23,6 +24,9 @@ func _ready() -> void:
 	add_child(audio)
 	ui = CanvasLayer.new()
 	add_child(ui)
+	campaign = preload("res://scripts/campaign.gd").new()
+	campaign.game = self
+	add_child(campaign)
 	show_menu()
 
 func clear_ui() -> void:
@@ -79,6 +83,9 @@ func menu(title: String, subtitle: String, choices: Dictionary) -> void:
 	column.add_child(make_label("WASD / arrows · Choose     Enter / Space · Select     Esc · Back",16))
 
 func show_menu() -> void:
+	if is_instance_valid(campaign):
+		campaign.travelling = false
+		campaign.in_battle = false
 	get_tree().paused = false
 	audio.clear_effects()
 	audio.ducked = false
@@ -89,9 +96,10 @@ func show_menu() -> void:
 		arena = null
 	clear_ui()
 	screen = "menu"
-	menu("The Sable Channel", "A one-on-one naval duel • M1.4 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail": start_battle,"Settings": show_settings,"Quit": quit_game})
+	menu("The Sable Channel", "A one-on-one naval duel • M1.4 combat refinement\n\nW / ↑ throttle   S / ↓ brake & reverse   A D / ← → turn\nSpace fires BOTH loaded sides. Turn your hull to aim.\nReload is automatic. Escape pauses.", {"Set sail — practice": start_battle,"New voyage": campaign.begin_new,"Continue voyage": campaign.continue_game,"Settings": show_settings,"Quit": quit_game})
 
 func start_battle(encounter: EncounterStats = null) -> void:
+	campaign.in_battle = false
 	get_tree().paused = false
 	audio.clear_effects()
 	audio.ducked = false
@@ -138,6 +146,9 @@ func pause_battle() -> void:
 	screen = "pause"
 	get_tree().paused = true
 	audio.ducked = true
+	if campaign.in_battle:
+		menu("Anchors held",arena.encounter.location_name,{"Resume":resume_battle,"Settings":show_settings,"Retreat to harbor":campaign.retreat,"Main menu":show_menu})
+		return
 	menu("Anchors held", arena.encounter.location_name + " • Combat is paused", {"Resume": resume_battle,"Settings": show_settings,"Restart duel": start_battle,"Main menu": show_menu})
 
 func resume_battle() -> void:
@@ -150,6 +161,9 @@ func resume_battle() -> void:
 	audio.ducked = false
 
 func end_battle(victory: bool) -> void:
+	if campaign.in_battle:
+		campaign.finish(victory)
+		return
 	screen = "result"
 	get_tree().paused = true
 	audio.ducked = true

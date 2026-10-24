@@ -5,6 +5,7 @@ signal salvo(ship: BroadsideShip, side: float)
 @export var hull: HullStats = preload("res://data/sloop.tres")
 @export var guns: CannonStats = preload("res://data/cannons.tres")
 @export var enemy: bool = false
+var pennant: int = 0
 var health: float
 var speed: float = 0.0
 var turn_velocity: float = 0.0
@@ -137,7 +138,7 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(-25,-17),Vector2(22,-17),Vector2(27,12),Vector2(0,18),Vector2(-24,10)]), Color("d8c89b"))
 	draw_colored_polygon(PackedVector2Array([Vector2(-21,-15),Vector2(19,-15),Vector2(21,8),Vector2(0,12),Vector2(-19,7)]), Color("f1e1b8"))
 	draw_line(Vector2(0,-16),Vector2(0,13),Color("aa9b76"),1.4,true)
-	draw_colored_polygon(PackedVector2Array([Vector2(0,-30),Vector2(18,-25),Vector2(0,-20)]), Color("c55748") if enemy else Color("42c7b7"))
+	draw_colored_polygon(PackedVector2Array([Vector2(0,-30),Vector2(18,-25),Vector2(0,-20)]), Color("c55748") if enemy else [Color("42c7b7"),Color("e8c861"),Color("e6e0ce")][pennant])
 	if health < hull.max_health * 0.5:
 		draw_line(Vector2(-12,23), Vector2(8,28), Color("332b27"),3.0,true)
 	if absf(speed) > 20:

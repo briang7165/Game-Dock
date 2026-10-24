@@ -39,9 +39,9 @@ func run() -> void:
 	await frames(2)
 	check(root.gui_get_focus_owner() is Button, "main menu has keyboard focus")
 	await tap(KEY_D)
-	check(root.gui_get_focus_owner().text == "Settings", "D moves menu focus")
+	check(root.gui_get_focus_owner().text == "New voyage", "D moves menu focus")
 	await tap(KEY_UP)
-	check(root.gui_get_focus_owner().text == "Set sail", "arrows move menu focus")
+	check(root.gui_get_focus_owner().text == "Set sail — practice", "arrows move menu focus")
 	await tap(KEY_ENTER)
 	check(game.screen == "battle", "Enter starts real arena")
 	var player: BroadsideShip = game.arena.player

@@ -15,7 +15,8 @@ func run() -> void:
 	elif mode in ["fleet","boss"]:
 		game.campaign.save.data.chapter = 3
 		game.campaign.save.data.stop = 4 if mode == "boss" else 3
-		game.campaign.save.data.hull = "frigate"
+		game.campaign.save.data.fleet.frigate = FleetState.bare("frigate")
+		FleetState.project(game.campaign.save.data,"frigate")
 		game.campaign.save.data.health = 144
 		game.campaign.show_chart()
 		game.campaign.start_travel(2)

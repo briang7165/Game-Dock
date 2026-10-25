@@ -7,20 +7,46 @@ const HULLS: Dictionary = {
 	"frigate":{"price":800,"hp":144.0,"speed":175.0,"turn":0.59,"accel":32.0,"guns":3,"capacity":4,"size":Vector2(1.16,1.38),"note":"Long, swift hunter; three guns, wider turning circle."},
 	"galleon":{"price":1500,"hp":208.0,"speed":125.0,"turn":0.46,"accel":25.0,"guns":4,"capacity":6,"size":Vector2(1.42,1.52),"note":"Broad, heavy flagship; four guns and a deliberate helm."}}
 const UPGRADES: Dictionary = {
-	"cannons":{"price":150,"max":2,"name":"Extra broadside gun","note":"+1 cannon per side, limited by your hull's gunports."},
-	"gunners":{"price":100,"max":3,"name":"Gunnery training","note":"Reload 8% faster per rank."},
-	"sails":{"price":90,"max":3,"name":"Fine canvas","note":"Top speed +7%, acceleration +6% per rank."},
-	"rudder":{"price":80,"max":3,"name":"Balanced rudder","note":"Turn rate +8%, rudder response +12% per rank."},
-	"lookout":{"price":70,"max":2,"name":"Lookout platform","note":"Camera reveals 5% more sea per rank."},
-	"prow":{"price":110,"max":2,"name":"Reinforced prow","note":"Ship rams deal +20% and hurt you 15% less per rank."},
-	"carpenter":{"price":90,"max":3,"name":"Ship's carpenter","note":"Restore 5 hull after each victory per rank."},
-	"cargo":{"price":100,"max":3,"name":"Salvage hold","note":"Recover +20% gold and +1 salvage per victory per rank."},
-	"armor":{"price":120,"max":3,"name":"Hull plating","note":"+18 hull, but -4% speed and -3% turning per rank."}}
+	"cannons":{"price":150,"max":2,"name":"Extra broadside gun","note":"Fire an extra cannonball from each side with every salvo. +1 cannon per side, limited by gunports."},
+	"gunners":{"price":100,"max":3,"name":"Gunnery training","note":"Your gun crew readies the next broadside sooner. Reload time falls 8% per rank."},
+	"sails":{"price":90,"max":3,"name":"Fine canvas","note":"Catch fleeing ships and build speed sooner. Top speed +7%, acceleration +6% per rank."},
+	"rudder":{"price":80,"max":3,"name":"Balanced rudder","note":"Turn more sharply to line up shots and dodge incoming fire. Turn rate +8%, rudder response +12% per rank."},
+	"lookout":{"price":70,"max":2,"name":"Lookout platform","note":"Spot threats sooner with a wider camera view. Visible width and height +5% per rank."},
+	"prow":{"price":110,"max":2,"name":"Reinforced prow","note":"Strengthen your bow for ship collisions. Rams deal +20% and hurt you 15% less per rank; rocks still hurt normally."},
+	"carpenter":{"price":90,"max":3,"name":"Ship's carpenter","note":"Your carpenter patches battle damage before the next passage. Restore 5 hull per rank after victories."},
+	"cargo":{"price":100,"max":3,"name":"Salvage hold","note":"Bring more prizes home from victories. Recover +20% gold and +1 salvage per rank."},
+	"armor":{"price":120,"max":3,"name":"Hull plating","note":"Survive more hits at the cost of agility. +18 hull, but -4% speed and -3% turning per rank."}}
 const WEAPONS: Dictionary = {
 	"chain":{"price":220,"note":"Chain shot: 10 damage; slows rigging for 2 seconds, cannot stack duration."},
 	"standard":{"price":0,"note":"Round shot: 16 damage, standard range and reload."},
 	"long":{"price":180,"note":"Long guns: +35% range, but reload 25% slower."},
 	"carronade":{"price":180,"note":"Carronades: 23 damage, but -35% range and +10% reload time."}}
+
+const CATEGORIES: Dictionary = {
+	"Firepower":["cannons","gunners"], "Sailing & Handling":["sails","rudder"],
+	"Defense & Repairs":["armor","prow","carpenter"], "Utility & Economy":["lookout","cargo"]}
+const LIMITS: Dictionary = {
+	"sloop":{"tiers":[1,3,3,3,2,2,2,2,2],"slots":[2,2,2,1]},
+	"brig":{"tiers":[1,3,3,3,2,2,3,3,3],"slots":[3,2,3,2]},
+	"frigate":{"tiers":[1,3,2,2,2,2,3,3,3],"slots":[3,2,3,2]},
+	"galleon":{"tiers":[2,3,2,2,2,2,3,3,3],"slots":[3,2,3,2]}}
+static func tier_limit(data: Dictionary, id: String) -> int:
+	return int(LIMITS[data.hull].tiers[UPGRADES.keys().find(id)])
+static func slots(data: Dictionary, category: String) -> int:
+	return int(LIMITS[data.hull].slots[CATEGORIES.keys().find(category)])
+static func used(data: Dictionary, category: String) -> int:
+	var count: int = 0
+	for id: String in CATEGORIES[category]:
+		if rank(data,id) > 0: count += 1
+	if category == "Firepower" and data.get("weapon","standard") != "standard": count += 1
+	return count
+static func capacity_text(data: Dictionary) -> String:
+	var count: int = 0
+	var capacity: int = 0
+	for category: String in CATEGORIES:
+		count += used(data,category)
+		capacity += slots(data,category)
+	return "%d / %d equipment slots" % [count,capacity]
 
 static func rank(data: Dictionary, key: String) -> int:
 	return int(data.upgrades.get(key,0))
@@ -60,40 +86,81 @@ static func price(data: Dictionary, kind: String, id: String) -> int:
 	match kind:
 		"hull": return int(HULLS[id].price) if HULLS.has(id) else -1
 		"upgrade": return int(UPGRADES[id].price)*(rank(data,id)+1) if UPGRADES.has(id) else -1
-		"weapon": return int(WEAPONS[id].price) if WEAPONS.has(id) else -1
+		"weapon": return (0 if data.get("owned_weapons",["standard"]).has(id) else int(WEAPONS[id].price)) if WEAPONS.has(id) else -1
 		"repair": return ceili(maxf(0,hull_for(data).max_health-float(data.health))*0.5)
 	return -1
 
-static func preview(data: Dictionary, kind: String, id: String) -> Dictionary:
+static func availability(data: Dictionary, kind: String, id: String, selected: String = "") -> String:
+	var vessel_id: String = data.hull if selected.is_empty() else selected
+	if data.active: return "Incompatible • finish the saved encounter"
+	if not HULLS.has(vessel_id): return "Incompatible ship"
+	if kind == "hull":
+		if not HULLS.has(id): return "Incompatible hull"
+		if data.fleet.has(id): return "Installed • already owned"
+	else:
+		if not data.fleet.has(vessel_id): return "Incompatible • purchase this ship first"
+	var vessel: Dictionary = FleetState.view(data,vessel_id)
+	if kind == "upgrade":
+		if not UPGRADES.has(id): return "Incompatible upgrade"
+		if rank(vessel,id) >= tier_limit(vessel,id): return "Maximum level • installed"
+		for category: String in CATEGORIES:
+			if id in CATEGORIES[category] and rank(vessel,id) == 0 and used(vessel,category) >= slots(vessel,category): return "Incompatible • category slots full"
+	elif kind == "weapon":
+		if not WEAPONS.has(id): return "Incompatible weapon"
+		if vessel.weapon == id: return "Installed"
+		if id != "standard" and vessel.weapon == "standard" and used(vessel,"Firepower") >= slots(vessel,"Firepower"): return "Incompatible • firepower slots full"
+	elif kind == "repair":
+		if price(vessel,kind,id) == 0: return "Installed • hull fully repaired"
+	elif kind != "hull": return "Incompatible transaction"
+	var cost: int = price(vessel,kind,id)
+	if int(data.gold) < cost: return "Unaffordable"
+	return "Available"
+
+static func preview(data: Dictionary, kind: String, id: String, selected: String = "") -> Dictionary:
+	if availability(data,kind,id,selected) != "Available": return {}
 	var next: Dictionary = data.duplicate(true)
-	var cost: int = price(data,kind,id)
-	if data.active or cost < 0 or int(data.gold) < cost:
-		return {}
+	var vessel_id: String = data.hull if selected.is_empty() else selected
+	var vessel: Dictionary = FleetState.view(data,vessel_id)
+	var cost: int = price(vessel,kind,id)
 	match kind:
-		"hull":
-			if id == data.hull: return {}
-			next.hull = id
-			next.health = hull_for(next).max_health
+		"hull": next.fleet[id] = FleetState.bare(id)
 		"upgrade":
-			if rank(data,id) >= int(UPGRADES[id].max): return {}
-			if id == "cannons" and guns_for(data).gun_count >= hull_for(data).cannon_capacity: return {}
-			next.upgrades[id] = rank(data,id)+1
-			if id == "armor": next.health += 18
+			vessel.upgrades[id] = rank(vessel,id)+1
+			if id == "armor": vessel.health += 18
 		"weapon":
-			if data.get("weapon","standard") == id: return {}
-			next.weapon = id
-		"repair":
-			if cost == 0: return {}
-			next.health = hull_for(next).max_health
-		_: return {}
+			vessel.weapon = id
+			if not vessel.owned_weapons.has(id): vessel.owned_weapons.append(id)
+		"repair": vessel.health = hull_for(vessel).max_health
+	if kind != "hull":
+		FleetState.capture(vessel)
+		next.fleet[vessel_id] = vessel.fleet[vessel_id].duplicate(true)
+	FleetState.project(next,data.hull)
 	next.gold = int(data.gold)-cost
 	return next
 
-static func purchase(save: CampaignSave, kind: String, id: String) -> bool:
-	var next: Dictionary = preview(save.data,kind,id)
-	if next.is_empty():
-		save.error = "Unavailable: check gold, rank, gunports or finish the current encounter."
+static func quote(data: Dictionary, kind: String, id: String, selected: String = "") -> Dictionary:
+	return {"revision":data.revision,"kind":kind,"id":id,"selected":data.hull if selected.is_empty() else selected}
+static func confirm(save: CampaignSave, offer: Dictionary) -> bool:
+	if offer.get("revision",-1) != save.data.revision:
+		save.error = "Estimate expired. Select the item again; nothing was charged."
 		return false
+	var next: Dictionary = preview(save.data,offer.get("kind",""),offer.get("id",""),offer.get("selected",""))
+	if next.is_empty():
+		save.error = "Unavailable. Check ship ownership, gold, slots and tier limits."
+		return false
+	return save.commit(next)
+static func purchase(save: CampaignSave, kind: String, id: String, selected: String = "") -> bool:
+	return confirm(save,quote(save.data,kind,id,selected))
+static func activate(save: CampaignSave, id: String) -> bool:
+	if save.data.active or not save.data.fleet.has(id): return false
+	var next: Dictionary = save.data.duplicate(true)
+	FleetState.project(next,id)
+	return save.commit(next)
+static func rename_ship(save: CampaignSave, id: String, title: String) -> bool:
+	if save.data.active or not save.data.fleet.has(id): return false
+	var next: Dictionary = save.data.duplicate(true)
+	next.fleet[id].ship = CampaignSave.clean_name(title,"The "+id.capitalize())
+	FleetState.project(next,save.data.hull)
 	return save.commit(next)
 
 static func apply(ship: BroadsideShip, data: Dictionary) -> void:

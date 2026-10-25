@@ -202,47 +202,12 @@ func retreat() -> void:
 	finish(false)
 
 func show_harbor() -> void:
-	var column := reset_screen("harbor")
-	column.add_child(game.make_label("Lantern Harbor — Shipyard",30))
-	column.add_child(game.make_label(identity(),20))
-	column.add_child(game.make_label("Gold %d  •  Salvage %d  •  Hull %d / %d" % [int(save.data.gold),int(save.data.get("salvage",0)),int(save.data.health),int(Shipyard.hull_for(save.data).max_health)],20))
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(900,340)
-	scroll.follow_focus = true
-	column.add_child(scroll)
-	var stock := VBoxContainer.new()
-	stock.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(stock)
-	button(stock,"Repair all hull — %d gold" % Shipyard.price(save.data,"repair",""),preview_purchase.bind("repair",""))
-	button(stock,"Exchange salvage — 12 gold each",sell_salvage)
-	for id: String in Shipyard.HULLS:
-		button(stock,"%s — %d gold • %s" % [id.capitalize(),int(Shipyard.HULLS[id].price),Shipyard.HULLS[id].note],preview_purchase.bind("hull",id))
-	for id: String in Shipyard.UPGRADES:
-		button(stock,"%s [%d/%d] — %d gold" % [Shipyard.UPGRADES[id].name,Shipyard.rank(save.data,id),int(Shipyard.UPGRADES[id].max),Shipyard.price(save.data,"upgrade",id)],preview_purchase.bind("upgrade",id))
-	for id: String in Shipyard.WEAPONS:
-		button(stock,"%s guns — %d gold • %s" % [id.capitalize(),int(Shipyard.WEAPONS[id].price),Shipyard.WEAPONS[id].note],preview_purchase.bind("weapon",id))
-	stock.add_child(game.make_label("Specialist berth • unlock after 3 victories • one active role",18))
-	for id: String in VoyageDirector.CREW:
-		button(stock, ("[Appointed] " if save.data.get("crew","none") == id else "")+VoyageDirector.CREW[id],appoint_crew.bind(id))
-	status = game.make_label(save.error if not save.error.is_empty() else "Equipment transfers to your new hull; extra guns respect its port capacity.",16)
-	column.add_child(status)
-	button(column,"Chart next passage",show_chart).grab_focus()
-	button(column,"Captain's papers",show_identity.bind(true))
-	button(column,"Main menu",game.show_menu)
-
-func preview_purchase(kind: String, id: String) -> void:
-	var next: Dictionary = Shipyard.preview(save.data,kind,id)
-	if next.is_empty():
-		status.text = "Unavailable: insufficient gold, already fitted, maximum rank, or encounter in progress."
-		return
-	var before: HullStats = Shipyard.hull_for(save.data)
-	var after: HullStats = Shipyard.hull_for(next)
-	var guns: CannonStats = Shipyard.guns_for(next)
-	var note: String = str(Shipyard.UPGRADES[id].note) if kind == "upgrade" else (str(Shipyard.HULLS[id].note) if kind == "hull" else "")
-	reset_screen("purchase")
-	game.menu("Shipwright's estimate", "%s\nCost %d gold • Remaining %d\nHull %d → %d • Speed %.0f → %.0f • Turn %.2f → %.2f\n%d guns per side • %.2fs reload • %.0f range\n%s" % [identity(),Shipyard.price(save.data,kind,id),int(next.gold),int(before.max_health),int(after.max_health),before.top_speed,after.top_speed,before.turn_rate,after.turn_rate,guns.gun_count,guns.reload_seconds,guns.projectile_speed*guns.projectile_lifetime,note],{"Back to shipyard":show_harbor,"Confirm purchase":func() -> void:
-		Shipyard.purchase(save,kind,id)
-		show_harbor()})
+	reset_screen("harbor")
+	game.clear_ui()
+	var harbor := ShipyardUI.new()
+	harbor.campaign = self
+	game.ui.add_child(harbor)
+	game.panel = harbor
 
 func sell_salvage() -> void:
 	if save.data.active:

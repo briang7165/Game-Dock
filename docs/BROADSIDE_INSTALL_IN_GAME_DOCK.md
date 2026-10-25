@@ -67,7 +67,7 @@ Game Dock checks that folder name matches id (both `broadside`), manifest is val
 2. Close the running game.
 3. Replace `Broadside.exe`, `Broadside.pck`, and `game.json` in Game Dock's actual `games/broadside` folder with **files from one matching version**.
 4. Reopen / refresh Game Dock. Do not mix a new EXE with an old PCK.
-5. When M2 adds persistent campaign saves, ensure Codex provides backward-compatible migrations and a backup strategy before upgrading.
+5. M2-D migrates existing campaigns to per-ship fleet saves and first archives the old file as `%APPDATA%/Broadside/campaign.json.v1.bak`. Keep this archive. See [migration and rollback](BROADSIDE_M2D_FLEET_SHIPYARD.md).
 
 ## Troubleshooting
 - **No Broadside card:** verify the exact folder is `games/broadside`, with `game.json` directly inside and `id` = `broadside`; refresh the library.
@@ -80,3 +80,7 @@ Game Dock checks that folder name matches id (both `broadside`), manifest is val
 
 ## Build verification
 The dedicated workflow pins Godot 4.5.2 and matching templates with SHA-512 values from the official release checksum file, runs the regression suite/schema validation, exports Windows x64, boots the exported executable and verifies the ZIP contains exactly the three required root files. It uploads only the versioned ZIP as `broadside-windows-x64`, separately from the launcher installer. Local equivalent: `games/broadside/packaging/build-windows.ps1 -Godot <console-exe> -OutputDirectory <output-folder>`.
+
+## M2-D playable build
+
+Choose the **Broadside playable Windows ZIP** run for the M2-D pull request. Download `broadside-windows-x64`, extract the Actions wrapper ZIP, then extract `Broadside-windows-x64-0.2.3-m2d.zip`. The inner ZIP contains exactly `Broadside.exe`, `Broadside.pck`, and `game.json`. Run the EXE directly, or copy all three into the `games/broadside` folder opened by Game Dock. Godot is not required. Close Broadside before replacing all three matched files. Saves remain outside this folder and migrate on Continue voyage.

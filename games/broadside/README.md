@@ -66,3 +66,7 @@ Install official Godot **4.5.2 stable** and matching export templates. Run:
 The script exports Windows x64, boots the exported executable, validates the manifest and packages exactly three root files. GitHub Actions performs the same independent Broadside build with checksum-pinned official downloads. It does not build the Game Dock installer. Generated binaries/caches are not committed. The package is unsigned.
 
 All illustrations and music/effects are original code-generated work; no external media were downloaded. Human review of pacing, balance and long-session play remains necessary before calling this a final release.
+
+## M2-D fleet management
+
+The harbor now retains one independently named/equipped vessel of each class. Buy without replacing your active ship, inspect comparisons, upgrade inactive vessels and switch freely outside encounters. Original portraits reuse the battle renderer. See [fleet rules and safe save migration](../../docs/BROADSIDE_M2D_FLEET_SHIPYARD.md) and [M2-D test results](../../docs/BROADSIDE_M2D_TEST_RESULTS.md). The runner also includes fleet/migration and real GUI input suites.

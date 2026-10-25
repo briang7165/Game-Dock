@@ -1,6 +1,6 @@
 class_name CampaignSave
 extends RefCounted
-const VERSION: int = 1
+const VERSION: int = 2
 var path: String = "user://campaign.json"
 var data: Dictionary = {}
 var error: String = ""
@@ -14,13 +14,15 @@ static func clean_name(value: String, fallback: String) -> String:
 	return fallback if result.is_empty() else result
 
 static func fresh(captain: String, ship: String, pennant: int = 0, voyage_seed: int = 0) -> Dictionary:
-	return {"version":VERSION,"captain":clean_name(captain,"Captain Rowan"),"ship":clean_name(ship,"The Wayfarer"),"pennant":clampi(pennant,0,2),"seed":voyage_seed if voyage_seed != 0 else randi_range(1,2147483646),"chapter":1,"stop":0,"attempt":0,"active":false,"route":0,"gold":0,"salvage":0,"weapon":"standard","crew":"none","ships_sunk":0,"gold_earned":0,"journal":[],"hull":"sloop","upgrades":{},"health":60.0,"wins":0,"losses":0,"bosses":0}
+	var initial: Dictionary = {"version":VERSION,"captain":clean_name(captain,"Captain Rowan"),"ship":clean_name(ship,"The Wayfarer"),"pennant":clampi(pennant,0,2),"seed":voyage_seed if voyage_seed != 0 else randi_range(1,2147483646),"chapter":1,"stop":0,"attempt":0,"active":false,"route":0,"gold":0,"salvage":0,"weapon":"standard","crew":"none","ships_sunk":0,"gold_earned":0,"journal":[],"hull":"sloop","upgrades":{},"health":60.0,"wins":0,"losses":0,"bosses":0}
+
+	return FleetState.migrate(initial)
 
 func valid(value: Variant) -> bool:
 	if not value is Dictionary:
 		return false
 	var d: Dictionary = value
-	if d.get("version") != VERSION:
+	if d.get("version") != 1 and d.get("version") != VERSION:
 		return false
 	for key: String in ["captain","ship","hull"]:
 		if not d.get(key) is String or d[key].length() > 64:
@@ -45,6 +47,24 @@ func valid(value: Variant) -> bool:
 	if not Shipyard.WEAPONS.has(d.get("weapon","standard")): return false
 	var salvage: Variant = d.get("salvage",0)
 	if not (salvage is int or salvage is float) or not is_finite(float(salvage)) or salvage < 0 or salvage > 1000000000: return false
+	if d.version == VERSION:
+		if not d.get("owned_weapons",["standard"]) is Array: return false
+		if not d.get("fleet") is Dictionary or not d.fleet.has(d.hull) or d.fleet.size() > 4: return false
+		var revision: Variant = d.get("revision")
+		if not (revision is int or revision is float) or not is_finite(float(revision)) or revision < 0 or revision != floorf(revision) or revision > 2147483646: return false
+		for id: String in d.fleet:
+			if not Shipyard.HULLS.has(id) or not d.fleet[id] is Dictionary: return false
+			var vessel: Dictionary = d.fleet[id]
+			var probe: Dictionary = d.duplicate(true)
+			probe.version = 1
+			probe.hull = id
+			for key: String in FleetState.FIELDS:
+				if not vessel.has(key): return false
+				probe[key] = vessel[key]
+			if not valid(probe): return false
+			if not vessel.owned_weapons is Array or vessel.owned_weapons.size() > 4 or not vessel.owned_weapons.has(vessel.weapon): return false
+			for weapon: Variant in vessel.owned_weapons:
+				if not weapon is String or not Shipyard.WEAPONS.has(weapon): return false
 	return d.chapter >= 1 and d.stop < 5 and d.route < 3 and d.pennant < 3 and d.hull in ["sloop","brig","frigate","galleon"] and d.get("active") is bool and d.get("upgrades") is Dictionary
 
 func read_file(file_path: String) -> Dictionary:
@@ -61,12 +81,41 @@ func read_file(file_path: String) -> Dictionary:
 
 func load_game() -> bool:
 	error = ""
-	data = read_file(path)
-	if not data.is_empty():
-		return true
-	data = read_file(path+".bak")
-	if not data.is_empty():
-		error = "Recovered the previous safe save from backup."
+	if FileAccess.file_exists(path):
+		var current_file := FileAccess.open(path,FileAccess.READ)
+		if current_file != null and current_file.get_length() <= 65536:
+			var decoder := JSON.new()
+			decoder.parse(current_file.get_as_text())
+			var current: Variant = decoder.data
+			if current is Dictionary and (current.get("version") is int or current.get("version") is float) and current.version > VERSION:
+				error = "This save belongs to a newer Broadside version. Original and backup preserved."
+				return false
+
+	for source: String in [path,path+".bak"]:
+		var loaded: Dictionary = read_file(source)
+		if loaded.is_empty(): continue
+		if int(loaded.version) == 1:
+			# Archive the exact legacy bytes BEFORE any v2 write. Never overwrite an archive.
+			var archive: String = path+".v1.bak"
+			if DirAccess.dir_exists_absolute(archive):
+				error = "Cannot create legacy archive: a directory occupies its path. Original preserved."
+				return false
+			if FileAccess.file_exists(archive):
+				if FileAccess.get_file_as_bytes(archive) != FileAccess.get_file_as_bytes(source):
+					error = "Legacy archive already exists with different contents. Saves preserved; copy it to a safe location before migration."
+					return false
+			elif DirAccess.copy_absolute(source,archive) != OK:
+				error = "Cannot back up legacy save; migration stopped without changing it."
+				return false
+			if FileAccess.get_file_as_bytes(archive) != FileAccess.get_file_as_bytes(source):
+				error = "Legacy backup verification failed; migration stopped."
+				return false
+			if not commit(FleetState.migrate(loaded)): return false
+			error = "Fleet restored. Original save archived as campaign.json.v1.bak."
+		else:
+			data = loaded
+			FleetState.project(data,data.hull)
+			if source != path: error = "Recovered the previous safe save from backup."
 		return true
 	if FileAccess.file_exists(path):
 		error = "Save unavailable or from an unsupported version. Original files preserved; start a new voyage only after confirmation."
@@ -74,7 +123,14 @@ func load_game() -> bool:
 
 func commit(next: Dictionary) -> bool:
 	error = ""
+	next = next.duplicate(true)
 	if not valid(next):
+		error = "Invalid campaign state; save was not changed."
+		return false
+	if next.get("version") == VERSION and next.get("fleet") is Dictionary and next.fleet.has(next.get("hull")):
+		FleetState.capture(next)
+		next.revision = (int(data.get("revision",0))+1) % 2147483646
+	if next.get("version") != VERSION or not valid(next):
 		error = "Invalid campaign state; save was not changed."
 		return false
 	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)

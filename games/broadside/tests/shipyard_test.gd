@@ -22,9 +22,9 @@ func run() -> void:
 	next.gold = 20000
 	save.commit(next)
 	var estimate: Dictionary = Shipyard.preview(save.data,"hull","brig")
-	check(estimate.hull == "brig" and save.data.hull == "sloop" and save.data.gold == 20000,"purchase preview is non-mutating")
+	check(estimate.fleet.has("brig") and estimate.hull == "sloop" and save.data.hull == "sloop" and save.data.gold == 20000,"purchase preview is non-mutating")
 	for id: String in ["brig","frigate","galleon"]:
-		check(Shipyard.purchase(save,"hull",id) and Shipyard.guns_for(save.data).gun_count == int(Shipyard.HULLS[id].guns),"purchase distinct hull and starting guns: "+id)
+		check(Shipyard.purchase(save,"hull",id) and Shipyard.activate(save,id) and Shipyard.guns_for(save.data).gun_count == int(Shipyard.HULLS[id].guns),"purchase distinct hull and starting guns: "+id)
 	check(Shipyard.purchase(save,"upgrade","cannons") and Shipyard.purchase(save,"upgrade","cannons") and not Shipyard.purchase(save,"upgrade","cannons"),"gun upgrades stop at capacity and rank limit")
 	for id: String in Shipyard.UPGRADES:
 		if id != "cannons": check(Shipyard.purchase(save,"upgrade",id),"upgrade persists: "+id)

@@ -32,6 +32,9 @@ No additional account or subscription is needed to run the installed application
 
 - [AGENTS.md](AGENTS.md) — repository instructions for coding agents.
 
+
+- [Broadside M2-E shipyard and combat polish](docs/BROADSIDE_M2E_POLISH.md) — clear upgrade descriptions, fixed top repairs, wider menus, distinct boss moves and livelier original shanty music; [Issue #12](https://github.com/briang7165/Game-Dock/issues/12).
+
 ## Releasing
 
 Run `BUILD_WINDOWS_INSTALLER.bat` on Windows or download the installer artifact from the GitHub Actions build once it has passed. The CI workflow builds a **launcher-only** NSIS installer; it does not publish a release or bundle Broadside. Game Dock does not currently download or install games.

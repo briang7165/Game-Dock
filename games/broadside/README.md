@@ -70,3 +70,7 @@ All illustrations and music/effects are original code-generated work; no externa
 ## M2-D fleet management
 
 The harbor now retains one independently named/equipped vessel of each class. Buy without replacing your active ship, inspect comparisons, upgrade inactive vessels and switch freely outside encounters. Original portraits reuse the battle renderer. See [fleet rules and safe save migration](../../docs/BROADSIDE_M2D_FLEET_SHIPYARD.md) and [M2-D test results](../../docs/BROADSIDE_M2D_TEST_RESULTS.md). The runner also includes fleet/migration and real GUI input suites.
+
+## M2-E polish
+
+Repairs remain above the harbor inventory and require confirmation. Upgrade details and checkout stay in one panel; Show numbers expands comparisons. The 0.65 camera and compact menus show more content. Named bosses now use warned special moves with cooldowns. Original “Lanterns on the Rolling Tide” arrangements crossfade between harbor, battle and boss contexts. See [M2-E validation and human review needs](../../docs/BROADSIDE_M2E_TEST_RESULTS.md).

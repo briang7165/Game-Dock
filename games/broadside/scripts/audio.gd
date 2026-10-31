@@ -2,6 +2,9 @@ extends Node
 const Synth = preload("res://scripts/audio_synth.gd")
 @export var config: BroadsideAudioConfig = preload("res://data/audio.tres")
 var music_player: AudioStreamPlayer
+var music_tracks: Dictionary = {}
+var music_mix: Dictionary = {"harbor":1.0,"battle":0.0,"boss":0.0}
+var music_context: String = "harbor"
 var ocean_player: AudioStreamPlayer
 var wake_player: AudioStreamPlayer
 var sounds: Dictionary = {}
@@ -22,9 +25,11 @@ func _ready() -> void:
 			AudioServer.add_bus()
 			AudioServer.set_bus_name(AudioServer.bus_count-1,bus)
 	load_settings()
-	music_player = make_player(Synth.music(config),"Music")
-	music_player.volume_db = -60
-	music_player.play()
+	for mode: String in ["harbor","battle","boss"]:
+		music_tracks[mode] = make_player(Synth.music(config,mode),"Music")
+		music_tracks[mode].volume_db = -60
+	for player: AudioStreamPlayer in music_tracks.values(): player.play()
+	music_player = music_tracks.harbor
 	for kind: String in config.effect_gains:
 		sounds[kind] = Synth.effect(kind,config.sample_rate)
 	ocean_player = make_player(Synth.effect("ocean",config.sample_rate),"SFX")
@@ -44,11 +49,19 @@ func make_player(stream: AudioStream, bus: String) -> AudioStreamPlayer:
 
 func _process(delta: float) -> void:
 	var target: float = music_target - (8.0 if ducked else 0.0)
-	music_player.volume_db = move_toward(music_player.volume_db,target,45.0*delta/maxf(config.transition_seconds,0.05))
+	for mode: String in music_tracks:
+		music_mix[mode] = move_toward(float(music_mix[mode]),1.0 if mode == music_context else 0.0,delta/maxf(config.transition_seconds,0.05))
+		music_tracks[mode].volume_db = target+linear_to_db(maxf(0.00001,float(music_mix[mode])))
 
 func set_battle(active: bool) -> void:
 	battle = active
 	music_target = config.combat_music_db if battle else config.menu_music_db
+	set_context("battle" if active else "harbor")
+
+func set_context(mode: String) -> void:
+	if not music_tracks.has(mode): return
+	music_context = mode
+	music_player = music_tracks[mode]
 
 func set_motion(ratio: float, delta: float) -> void:
 	var target: float = lerpf(-50.0,-24.0,clampf(ratio,0,1)) if battle and not ducked else -60.0
@@ -76,7 +89,7 @@ func apply_levels() -> void:
 
 func clear_effects() -> void:
 	for child: Node in get_children():
-		if child is AudioStreamPlayer and child not in [music_player,ocean_player,wake_player]:
+		if child is AudioStreamPlayer and child not in music_tracks.values() and child not in [ocean_player,wake_player]:
 			child.stop()
 			child.queue_free()
 

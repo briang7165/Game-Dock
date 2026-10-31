@@ -57,7 +57,7 @@ func run() -> void:
 	for i: int in range(120):
 		ship.step(1.0/60,-1,0)
 	check(absf(ship.speed) <= 22.01,"reverse speed is limited")
-	check(is_equal_approx(game.arena.camera.zoom.x,0.72),"camera uses the wider M1.4 framing")
+	check(is_equal_approx(game.arena.camera.zoom.x,0.65),"camera uses the wider M2-E framing")
 	check(ship.guns.projectile_speed == 300 and ship.guns.projectile_lifetime*300 >= 860,"slower cannonballs retain useful range")
 	check(400.0/ship.guns.projectile_speed > 1.3,"medium-range travel exceeds 1.3 seconds")
 	# Clear-water paired scenario: identical fixed volley, change only the human's lead.

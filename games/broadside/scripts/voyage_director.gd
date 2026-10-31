@@ -74,7 +74,7 @@ static func configure(ship: BroadsideShip, role: String, info: EncounterStats) -
 		ship.guns.gun_count = 1 if info.difficulty == 1 and info.route == 0 else 2
 		ship.guns.reload_seconds = 3.8
 		ship.tactics.ai_telegraph = 1.2
-		ship.role = "heavy" if role == "regent" else ("hunter" if role == "corsair" else "raider")
+		ship.ability = BossAbility.new(role)
 	ship.health = ship.hull.max_health
 	ship.set_cannon_loadout(ship.guns)
 	ship.modulate = Color("ffd0b1") if not info.boss_name.is_empty() else Color.WHITE

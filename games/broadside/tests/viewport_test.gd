@@ -51,7 +51,7 @@ func run() -> void:
 	game.arena.enemy.set_physics_process(false)
 	await frames(30)
 	check(game.battle_view.chrome.title.text == "THE SABLE CHANNEL" and game.battle_view.chrome.title.modulate.a > 0.9,"location data appears in entry title")
-	check(game.arena.camera.zoom == Vector2.ONE*0.72,"camera uses configurable 0.72 zoom")
+	check(game.arena.camera.zoom == Vector2.ONE*0.65,"camera uses configurable 0.65 zoom")
 	game.pause_battle()
 	var elapsed: float = game.battle_view.chrome.elapsed
 	await frames(60)

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "broadside",
   "name": "Broadside",
-  "version": "0.2.3-m2d",
+  "version": "0.2.4-m2e",
   "genre": "Naval combat",
   "description": "Offline pirate campaign: named captain, saved voyages, branching sea chart, shipyard upgrades and fleet battles. Keyboard sailing and fixed broadsides.",
   "executable": "Broadside.exe"

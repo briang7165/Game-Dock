@@ -26,6 +26,8 @@ func run() -> void:
 		if index < kinds.size():
 			audio.play_effect(kinds[index])
 			index += 1
+		if elapsed == 8.0: audio.set_context("boss")
+		if elapsed == 16.0: audio.set_context("harbor")
 		var position: float = audio.music_player.get_playback_position()
 		if position < prior:
 			wraps += 1
@@ -42,7 +44,8 @@ func run() -> void:
 	AudioServer.remove_bus_effect(0,0)
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if args.size() > 0:
-		audio.music_player.stream.save_to_wav(args[0])
+		for mode: String in audio.music_tracks:
+			print("WAV: ",audio.music_tracks[mode].stream.save_to_wav(args[0]+"-"+mode+".wav"))
 	audio.shutdown()
 	await create_timer(0.2).timeout
 	game.queue_free()

@@ -2,6 +2,10 @@
 
 This repository contains the **Tauri/Rust/React Game Dock launcher** and independent standalone games. Preserve launcher/game separation and require verifiable tests.
 
+## Latest requested milestone: Broadside M2-E (October 30, 2026)
+
+Use docs/BROADSIDE_M2E_POLISH.md and GitHub Issue #12 to refine the existing M2-D campaign (base feature/broadside-m2d-fleet / PR #11, **not main alone**). First: clean duplicate tooltip + opaque reparented upgrade modal in shipyard_ui.gd, make all upgrade descriptions clear to a 12-year-old, pin active-ship repair atop the harbor with optional sail-damaged (no automatic purchase). Then: zoom out slightly more / use responsive menu layout, give enemy classes distinct movement and bosses real telegraphed special moves, replace dull soundtrack with a fun original sea-shanty-style arrangement. Preserve permanent per-ship saved upgrades, existing captain/voyage and Game Dock installation ZIP. Deliver tested PRs, never auto-merge.
+
 ## General guardrails
 - Read README.md, docs/ARCHITECTURE.md and relevant game-specific spec BEFORE changes.
 - Work on a feature branch, open a pull request, **never auto-merge** or force-push main.

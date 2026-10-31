@@ -1,0 +1,28 @@
+name: Broadside M1 tests
+on:
+  pull_request:
+    paths: ['games/broadside/**', 'specs/game-manifest.schema.json', '.github/workflows/broadside.yml']
+  push:
+    branches: [main]
+    paths: ['games/broadside/**', 'specs/game-manifest.schema.json', '.github/workflows/broadside.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  combat:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official pinned Godot and schema validator
+        shell: pwsh
+        run: |
+          Invoke-WebRequest 'https://github.com/godotengine/godot-builds/releases/download/4.5.2-stable/Godot_v4.5.2-stable_win64.exe.zip' -OutFile "$env:RUNNER_TEMP/godot.zip"
+          Expand-Archive "$env:RUNNER_TEMP/godot.zip" "$env:RUNNER_TEMP/godot"
+          python -m pip install jsonschema==4.26.0
+      - name: Import, load, combat, AI soak, manifest
+        shell: pwsh
+        run: ./games/broadside/tests/run.ps1 -Godot "$env:RUNNER_TEMP/godot/Godot_v4.5.2-stable_win64_console.exe"

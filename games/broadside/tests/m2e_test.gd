@@ -61,11 +61,11 @@ func run() -> void:
 			check(boss.position.distance_to(before) > 20 and absf(boss.rotation) < 0.05,"charge moves straight using real sailing and collision physics")
 			ability.tick(boss,1.2,true,true)
 			check(ability.phase == "release" and ability.timer >= 1,"heavy broadside has an additional warning")
-			ability.tick(boss,1.1,true,true)
+			ability.tick(boss,1.1,true,false)
 			var heavy: bool = false
 			for child: Node in game.arena.get_children():
 				if "stats" in child and child.stats is CannonStats: heavy = heavy or child.stats.damage == 20
-			check(ability.salvos == 1 and heavy,"Regent launches real stronger cannonballs")
+			check(ability.salvos == 1 and heavy,"Regent commits real stronger broadside even if player dodges its line")
 		check(ability.phase == "rest" and ability.cooldown >= 13,"special ends with vulnerability and long cooldown")
 		var salvos: int = ability.salvos
 		ability.tick(boss,2.1,true,true)

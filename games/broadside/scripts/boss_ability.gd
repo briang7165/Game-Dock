@@ -1,6 +1,6 @@
 class_name BossAbility
 extends RefCounted
-## Bounded, interruptible boss phases. Every release rechecks visibility, cover and alignment.
+## Bounded, interruptible boss phases. Every release rechecks visibility and cover.
 const SPECS: Dictionary = {
 	"warden":{"name":"Double Volley","tell":1.6,"cooldown":13.0,"cue":"boss_bell"},
 	"corsair":{"name":"Rigging Breaker","tell":1.8,"cooldown":14.0,"cue":"boss_chain"},
@@ -72,6 +72,8 @@ func tick(ship: Node, delta: float, safe: bool, aligned: bool) -> bool:
 			timer = 1.0
 			ship.arena.sound("boss_bell",ship.global_position)
 		"release":
-			if aligned: shoot(ship,"heavy")
+			# Commit the warned broadside even if the player dodged its line.
+			# Guns remain fixed to the hull; never swivel a shot to force a hit.
+			shoot(ship,"heavy")
 			finish()
 	return true

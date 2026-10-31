@@ -16,6 +16,9 @@ func run() -> void:
 	Shipyard.purchase(save,"upgrade","rudder")
 	Shipyard.purchase(save,"upgrade","sails")
 	Shipyard.purchase(save,"upgrade","cannons")
+	data = save.data.duplicate(true)
+	data.health = 34
+	save.commit(data)
 	game.campaign.show_harbor()
 	var args := OS.get_cmdline_user_args()
 	var mode: String = args[1] if args.size() > 1 else "fleet"
@@ -23,15 +26,42 @@ func run() -> void:
 	var harbor: ShipyardUI = game.panel
 	await create_timer(0.5).timeout
 	if mode == "compare":
-		harbor.select_ship("brig")
+		harbor.show_page("Fleet")
+		harbor.selected = "brig"
+		harbor.show_ship("brig")
 		await process_frame
 		harbor.scroll.scroll_vertical = 300
 	if mode == "upgrade":
-		harbor.category = "Sailing & Handling"
+		harbor.category = "Firepower"
 		harbor.refresh()
 		await process_frame
-		harbor.inspect("upgrade","rudder")
+		harbor.inspect("weapon","carronade")
+	if mode == "repair": harbor.inspect("repair","","active")
+	if mode == "chart": game.campaign.show_chart()
+	if mode == "menu": game.show_menu()
+	if mode == "boss":
+		var boss_data: Dictionary = CampaignSave.fresh("Test","Test",0,123)
+		boss_data.chapter = 3
+		boss_data.stop = 4
+		game.start_battle(VoyageDirector.encounter(boss_data))
+		game.arena.player.set_physics_process(false)
+		var boss: BroadsideShip = game.arena.enemy
+		boss.set_physics_process(false)
+		boss.position = game.arena.player.position+Vector2(370,0)
+		boss.rotation = 0
+		boss.ability.cooldown = 0
+		boss.ability.tick(boss,0.01,true,true)
+		boss.queue_redraw()
 	await create_timer(0.5).timeout
+	if mode in ["upgrade","repair","compare","fleet"]:
+		var fixed: Rect2 = harbor.repair_bar.get_global_rect()
+		var stock_rect: Rect2 = harbor.scroll.get_global_rect()
+		var actions: Rect2 = harbor.confirm_button.get_global_rect()
+		var footer: Rect2 = harbor.price_text.get_global_rect()
+		assert(fixed.end.y < stock_rect.position.y,"repairs stay above inventory")
+		assert(not footer.intersects(actions),"price and confirmation do not overlap")
+		assert(harbor.get_global_rect().encloses(actions),"confirmation fits window")
+		print("PASS: pinned repairs and unclipped checkout at ",root.size)
 	await RenderingServer.frame_post_draw
 	if args.size() > 0:
 		var screenshot: Image = root.get_texture().get_image()

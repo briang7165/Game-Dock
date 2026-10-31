@@ -84,3 +84,7 @@ The dedicated workflow pins Godot 4.5.2 and matching templates with SHA-512 valu
 ## M2-D playable build
 
 Choose the **Broadside playable Windows ZIP** run for the M2-D pull request. Download `broadside-windows-x64`, extract the Actions wrapper ZIP, then extract `Broadside-windows-x64-0.2.3-m2d.zip`. The inner ZIP contains exactly `Broadside.exe`, `Broadside.pck`, and `game.json`. Run the EXE directly, or copy all three into the `games/broadside` folder opened by Game Dock. Godot is not required. Close Broadside before replacing all three matched files. Saves remain outside this folder and migrate on Continue voyage.
+
+## M2-E update (0.2.4-m2e)
+
+Use the M2-E PR's linked playable Windows artifact. Close Broadside and replace all three matching files in Game Dock's existing `games/broadside` folder, then refresh the library. M2-E keeps M2-D's version-2 fleet save format and the same `%APPDATA%/Broadside` save/settings location. Do not delete that folder or start a new voyage to install the update. Keep a backup of your campaign and the old three game files for rollback. No Godot installation is needed.

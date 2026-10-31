@@ -39,14 +39,14 @@ func clear_ui() -> void:
 func make_label(text: String, size: int) -> Label:
 	var label := Label.new()
 	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size",size)
 	label.add_theme_color_override("font_color", Color("e8dbb5"))
 	return label
 
 func menu(title: String, subtitle: String, choices: Dictionary) -> void:
-	panel = Control.new()
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel = preload("res://scripts/readable_menu.gd").new()
 	ui.add_child(panel)
 	var shade := ColorRect.new()
 	shade.color = Color(0.02,0.075,0.10,0.94)
@@ -56,21 +56,25 @@ func menu(title: String, subtitle: String, choices: Dictionary) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(center)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation",16)
+	column.add_theme_constant_override("separation",8)
+	column.custom_minimum_size.x = 680
 	center.add_child(column)
 	column.add_child(make_label("—  B R O A D S I D E  —",20))
-	column.add_child(make_label(title,46))
-	column.add_child(make_label(subtitle,18))
+	column.add_child(make_label(title,36))
+	column.add_child(make_label(subtitle,16))
+	var choices_grid := GridContainer.new()
+	choices_grid.columns = 2
+	column.add_child(choices_grid)
 	var buttons: Array[Button] = []
 	for caption: String in choices:
 		var button := Button.new()
 		button.text = caption
-		button.custom_minimum_size = Vector2(330,48)
-		button.add_theme_font_size_override("font_size",22)
+		button.custom_minimum_size = Vector2(330,38)
+		button.add_theme_font_size_override("font_size",18)
 		button.pressed.connect(audio.play_effect.bind("select"))
 		button.pressed.connect(choices[caption])
 		button.mouse_entered.connect(button.grab_focus)
-		column.add_child(button)
+		choices_grid.add_child(button)
 		buttons.append(button)
 	for index: int in range(buttons.size()):
 		var previous: NodePath = buttons[index].get_path_to(buttons[posmod(index-1,buttons.size())])
@@ -104,6 +108,7 @@ func start_battle(encounter: EncounterStats = null) -> void:
 	audio.clear_effects()
 	audio.ducked = false
 	audio.set_battle(true)
+	if encounter != null and not encounter.boss_name.is_empty(): audio.set_context("boss")
 	if is_instance_valid(arena):
 		arena.get_parent().remove_child(arena)
 		arena.queue_free()

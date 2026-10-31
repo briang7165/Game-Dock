@@ -13,6 +13,7 @@ var starboard_state: Label
 var displayed_health: float
 var previous_health: float
 var flash: float = 0.0
+var combat_status: Label
 
 func box(color: Color, border: Color = Color.TRANSPARENT) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -83,7 +84,8 @@ func _ready() -> void:
 	port.add_child(port_state)
 	hull.add_child(hull_label)
 	starboard.add_child(starboard_state)
-	stack.add_child(label("WASD / ARROWS  Sail     •     SPACE  Fire loaded sides     •     ESC  Pause",14,Color("9eb1b3")))
+	combat_status = label("",14,Color("f0d79d"))
+	stack.add_child(combat_status)
 	ignore_input(self)
 	_process(0.0)
 
@@ -121,3 +123,12 @@ func _process(delta: float) -> void:
 	panel_style.border_color = Color("fff1c4") if flash > 0 else Color("aa8951")
 	battery_state(arena.player.port,port_bar,port_state)
 	battery_state(arena.player.starboard,starboard_bar,starboard_state)
+
+	combat_status.text = "WASD / ARROWS Sail • SPACE Fire • ESC Pause"
+	if arena.player.rigging_slow > 0:
+		combat_status.text = "RIGGING HIT! Slower sailing / turning for %.1fs" % arena.player.rigging_slow
+	else:
+		for hostile: BroadsideShip in arena.enemies:
+			if not hostile.dead and hostile.ability != null:
+				combat_status.text = arena.encounter.boss_name+" • "+hostile.ability.caption()
+				break

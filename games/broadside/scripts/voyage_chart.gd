@@ -5,10 +5,10 @@ const NAMES: Array[String] = ["The Sable Channel","Reefrunner Pass","Widowmaker 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	custom_minimum_size = Vector2(900,320)
+	custom_minimum_size = Vector2(0,180)
 
 func point(index: int) -> Vector2:
-	return Vector2(90+index*(size.x-180)/4.0,160+sin(index*2.0)*60)
+	return Vector2(90+index*(size.x-180)/4.0,size.y*0.45+sin(index*2.0)*size.y*0.14)
 
 func _draw() -> void:
 	draw_style_box(chart_style(),Rect2(Vector2.ZERO,size))
@@ -21,8 +21,8 @@ func _draw() -> void:
 			rock.append(at+Vector2.from_angle(angle*TAU/8)*rng.randf_range(9,23))
 		draw_colored_polygon(rock,Color("8b9872"))
 		draw_polyline(rock,Color("66785e"),2,true)
-	for wave: int in range(14):
-		var origin := Vector2(35+wave*61,38+sin(wave*2.7)*17)
+	for wave: int in range(int(size.x/70)):
+		var origin := Vector2(35+wave*70,38+sin(wave*2.7)*17)
 		draw_arc(origin,14,0.3,2.8,9,Color("98a68a"),1.2,true)
 	for i: int in range(4):
 		for dot: int in range(20):
@@ -40,7 +40,7 @@ func _draw() -> void:
 	var stop: int = int(state.get("stop",0))
 	# Three visible alternative lanes reconnect at the destination; chart choices
 	# select risk/reward, not an irreversible progression dead end.
-	var begin: Vector2 = point(maxi(0,stop-1)) if stop > 0 else Vector2(20,270)
+	var begin: Vector2 = point(maxi(0,stop-1)) if stop > 0 else Vector2(20,size.y-25)
 	for route: int in range(3):
 		var via: Vector2 = begin.lerp(point(stop),0.5)+Vector2(0,(route-1)*45)
 		for dot: int in range(16):
@@ -49,7 +49,7 @@ func _draw() -> void:
 			draw_circle(route_point,2,Color("9b573e") if route == int(state.get("route",0)) else Color("9d926f"))
 	var at: Vector2 = point(maxi(0,stop-1)).lerp(point(stop),travel if travel > 0 else 1.0)
 	if stop == 0 and travel > 0:
-		at = Vector2(20,270).lerp(point(0),travel)
+		at = Vector2(20,size.y-25).lerp(point(0),travel)
 	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-21),at+Vector2(12,12),at+Vector2(-12,12)]),Color("69472f"))
 	draw_line(at+Vector2(0,-16),at+Vector2(0,8),Color("403b2b"),2)
 	draw_colored_polygon(PackedVector2Array([at+Vector2(1,-15),at+Vector2(16,2),at+Vector2(1,2)]),Color("fff0c8"))

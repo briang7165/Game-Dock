@@ -19,34 +19,39 @@ func reset_screen(screen_name: String) -> VBoxContainer:
 	travelling = false
 	get_tree().paused = false
 	game.audio.set_battle(false)
-	game.audio.ducked = true
+	game.audio.ducked = false
 	if is_instance_valid(game.arena):
 		game.arena.get_parent().remove_child(game.arena)
 		game.arena.queue_free()
 		game.arena = null
 	game.clear_ui()
 	game.screen = screen_name
-	var root := Control.new()
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var root: Control = preload("res://scripts/readable_menu.gd").new()
 	game.ui.add_child(root)
 	var shade := ColorRect.new()
 	shade.color = Color("0a222d")
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(shade)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_child(center)
+	var margins := MarginContainer.new()
+	margins.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for edge: String in ["left","right","top","bottom"]: margins.add_theme_constant_override("margin_"+edge,12)
+	root.add_child(margins)
+	var scroller := ScrollContainer.new()
+	scroller.follow_focus = true
+	scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	margins.add_child(scroller)
 	var column := VBoxContainer.new()
-	column.custom_minimum_size.x = 900
-	column.add_theme_constant_override("separation",10)
-	center.add_child(column)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation",6)
+	scroller.add_child(column)
 	game.panel = root
 	return column
 
 func button(column: Container, text: String, action: Callable) -> Button:
 	var result := Button.new()
 	result.text = text
-	result.custom_minimum_size.y = 40
+	result.custom_minimum_size.y = 32
+	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	result.pressed.connect(action)
 	column.add_child(result)
 	return result
@@ -131,9 +136,11 @@ func show_chart() -> void:
 			choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			choice.tooltip_text = ["Safer duels, moderate gold. Always available after defeat.","More reefs; extra salvage and gold.","Elite hunters and later fleets; the greatest reward."][route]
 			if route == 0: choice.grab_focus()
-	button(column,"Safe harbor / Shipyard",show_harbor)
-	button(column,"Voyage journal",show_journal)
-	button(column,"Main menu",game.show_menu)
+	var navigation := HBoxContainer.new()
+	column.add_child(navigation)
+	button(navigation,"Safe harbor / Shipyard",show_harbor)
+	button(navigation,"Voyage journal",show_journal)
+	button(navigation,"Main menu",game.show_menu)
 
 func start_travel(route: int = 0) -> void:
 	if not save.begin_encounter(route):
@@ -146,10 +153,8 @@ func start_travel(route: int = 0) -> void:
 	status.text = "Under way • Enter / Space / Escape to skip sailing"
 	# Existing chart buttons become only a skip control during the interlude.
 	var column: Node = chart.get_parent()
-	for child: Node in column.get_children():
-		if child is Button:
-			column.remove_child(child)
-			child.queue_free()
+	for child: Node in column.find_children("*","Button",true,false):
+		child.disabled = true
 	button(column,"Skip sailing",enter_battle).grab_focus()
 
 func _process(delta: float) -> void:

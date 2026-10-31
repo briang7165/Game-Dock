@@ -7,20 +7,20 @@ const HULLS: Dictionary = {
 	"frigate":{"price":800,"hp":144.0,"speed":175.0,"turn":0.59,"accel":32.0,"guns":3,"capacity":4,"size":Vector2(1.16,1.38),"note":"Long, swift hunter; three guns, wider turning circle."},
 	"galleon":{"price":1500,"hp":208.0,"speed":125.0,"turn":0.46,"accel":25.0,"guns":4,"capacity":6,"size":Vector2(1.42,1.52),"note":"Broad, heavy flagship; four guns and a deliberate helm."}}
 const UPGRADES: Dictionary = {
-	"cannons":{"price":150,"max":2,"name":"Extra broadside gun","note":"Fire an extra cannonball from each side with every salvo. +1 cannon per side, limited by gunports."},
-	"gunners":{"price":100,"max":3,"name":"Gunnery training","note":"Your gun crew readies the next broadside sooner. Reload time falls 8% per rank."},
-	"sails":{"price":90,"max":3,"name":"Fine canvas","note":"Catch fleeing ships and build speed sooner. Top speed +7%, acceleration +6% per rank."},
-	"rudder":{"price":80,"max":3,"name":"Balanced rudder","note":"Turn more sharply to line up shots and dodge incoming fire. Turn rate +8%, rudder response +12% per rank."},
-	"lookout":{"price":70,"max":2,"name":"Lookout platform","note":"Spot threats sooner with a wider camera view. Visible width and height +5% per rank."},
-	"prow":{"price":110,"max":2,"name":"Reinforced prow","note":"Strengthen your bow for ship collisions. Rams deal +20% and hurt you 15% less per rank; rocks still hurt normally."},
-	"carpenter":{"price":90,"max":3,"name":"Ship's carpenter","note":"Your carpenter patches battle damage before the next passage. Restore 5 hull per rank after victories."},
-	"cargo":{"price":100,"max":3,"name":"Salvage hold","note":"Bring more prizes home from victories. Recover +20% gold and +1 salvage per rank."},
-	"armor":{"price":120,"max":3,"name":"Hull plating","note":"Survive more hits at the cost of agility. +18 hull, but -4% speed and -3% turning per rank."}}
+	"cannons":{"price":150,"max":2,"name":"Extra Cannons","note":"Adds one cannon on each side, so each broadside fires more shots. Uses a gunport."},
+	"gunners":{"price":100,"max":3,"name":"Faster Reloading","note":"Your crew loads the cannons faster, so you can shoot again sooner."},
+	"sails":{"price":90,"max":3,"name":"Fine Sails","note":"Catch fleeing ships: speed up sooner and sail faster."},
+	"rudder":{"price":80,"max":3,"name":"Better Rudder","note":"Turn more easily to line up shots or dodge danger."},
+	"lookout":{"price":70,"max":2,"name":"Lookout","note":"See more ocean around your ship and spot trouble sooner."},
+	"prow":{"price":110,"max":2,"name":"Strong Bow","note":"Ram enemy ships harder and take less damage from ship crashes. Rocks still hurt."},
+	"carpenter":{"price":90,"max":3,"name":"Repair Expert","note":"Fixes a little damage after you win. Does not repair during a fight."},
+	"cargo":{"price":100,"max":3,"name":"Treasure Hold","note":"Bring back more gold and salvage from each victory."},
+	"armor":{"price":120,"max":3,"name":"Stronger Hull","note":"Survive more hits, but the extra weight makes you slower to sail and turn."}}
 const WEAPONS: Dictionary = {
-	"chain":{"price":220,"note":"Chain shot: 10 damage; slows rigging for 2 seconds, cannot stack duration."},
-	"standard":{"price":0,"note":"Round shot: 16 damage, standard range and reload."},
-	"long":{"price":180,"note":"Long guns: +35% range, but reload 25% slower."},
-	"carronade":{"price":180,"note":"Carronades: 23 damage, but -35% range and +10% reload time."}}
+	"chain":{"price":220,"name":"Chain Shot","note":"Slows an enemy for a moment, but hurts its hull less. Useful for escaping or lining up another shot."},
+	"standard":{"price":0,"name":"Round Shot","note":"Regular cannonballs. Balanced damage, range and reload time, with no special effect."},
+	"long":{"price":180,"name":"Long-Range Cannons","note":"Reach ships farther away, but take longer to reload. Keep your distance."},
+	"carronade":{"price":180,"name":"Close-Range Cannons","note":"Carronades hit harder up close, but cannot shoot far and reload a little slower. Get close before firing."}}
 
 const CATEGORIES: Dictionary = {
 	"Firepower":["cannons","gunners"], "Sailing & Handling":["sails","rudder"],

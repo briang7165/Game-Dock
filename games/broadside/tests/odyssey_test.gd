@@ -137,10 +137,11 @@ func run() -> void:
 	game.campaign.show_harbor()
 	await frames(2)
 	var harbor: ShipyardUI = game.panel
+	harbor.show_page("Crew")
 	var scroll: ScrollContainer = harbor.scroll
 	harbor.last_crew_button.grab_focus()
 	await frames(5)
-	check(scroll.scroll_vertical > 0,"keyboard focus scrolls to the final crew appointment")
+	check(harbor.last_crew_button.has_focus() and scroll.get_global_rect().intersects(harbor.last_crew_button.get_global_rect()),"keyboard reaches visible final crew appointment")
 	game.show_menu()
 	await frames(5)
 	game.audio.shutdown()

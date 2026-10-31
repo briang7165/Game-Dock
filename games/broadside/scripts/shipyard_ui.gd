@@ -95,6 +95,8 @@ func section(parent: Node, color: Color = Color("142d35")) -> VBoxContainer:
 	panel.add_child(box)
 	return box
 func fit_window() -> void:
+	# A removed menu can receive resize before its deferred deletion.
+	if not is_inside_tree(): return
 	# Harbor uses physical-pixel layout on desktop, so 800px windows reflow instead of shrinking 1280px text.
 	var factor: Vector2 = get_viewport().get_final_transform().get_scale()
 	if DisplayServer.get_name() == "headless": factor = Vector2.ONE

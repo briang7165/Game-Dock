@@ -22,6 +22,12 @@ Commands: `games/broadside/tests/run.ps1 -Godot <4.5.2-console> -Python <test-ve
 - Native real-time 26-second mixer check: one complete loop, all three arrangements/crossfades and SFX, peak 0.3967, RMS 0.0405, 2,635,776 channel samples, clean exit. Exported three WAV audition files. Automated sample/mixer checks are not a human listening review: subjective melody, timbre and mix still need ears/headphones.
 - Windows release export, exported boot and exact three-file ZIP passed. Package version 0.2.4-m2e. `npm run build` passed; Rust `cargo test --offline --manifest-path launcher/src-tauri/Cargo.toml` passed 2/2. Launcher source untouched.
 
+## Screenshot and resize validation
+
+Native captures: 800×450 upgrade checkout and chart/main menu; 1280×720 pinned repair/inventory; 1920×1080 inactive brig comparison; 2560×1440 fullscreen. A 2560×1440 window request is clamped by Windows to a 2560×1415 client area on this monitor; the fullscreen capture verifies the exact 1440 height. Capture harness checks repair above scrolling inventory, price/Confirm non-overlap and visible checkout controls.
+
+The first fullscreen harbor capture exposed a removed menu still subscribed to viewport resize before deferred deletion (debug null-viewport errors; exported unhandled exception). Fixed with an in-tree guard on menu/harbor resize callbacks. Added immediate resize during menu transition to the real GUI suite; source and exported GUI both pass 19/19, and exported fullscreen now captures and exits cleanly. This specific fix is not presented as the root cause of the separate headless shutdown issue.
+
 ## Review needs
 
 Human playtest: purchase flow with your existing fleet; reading comfort and scaling on your display; all three bosses against moving human players; pacing/avoidability; enjoyable shanty timbre and SFX audibility on speakers/headphones. Existing migration, backups, currency, purchases and no-softlock recovery are regression-tested, not replaced. GitHub Actions results and downloadable artifact are linked in the PR once available.

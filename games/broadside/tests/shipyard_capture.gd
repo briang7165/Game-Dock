@@ -27,6 +27,7 @@ func run() -> void:
 	await create_timer(0.5).timeout
 	if mode == "compare":
 		harbor.show_page("Fleet")
+		harbor.selected = "brig"
 		harbor.show_ship("brig")
 		await process_frame
 		harbor.scroll.scroll_vertical = 300
@@ -38,6 +39,19 @@ func run() -> void:
 	if mode == "repair": harbor.inspect("repair","","active")
 	if mode == "chart": game.campaign.show_chart()
 	if mode == "menu": game.show_menu()
+	if mode == "boss":
+		var boss_data: Dictionary = CampaignSave.fresh("Test","Test",0,123)
+		boss_data.chapter = 3
+		boss_data.stop = 4
+		game.start_battle(VoyageDirector.encounter(boss_data))
+		game.arena.player.set_physics_process(false)
+		var boss: BroadsideShip = game.arena.enemy
+		boss.set_physics_process(false)
+		boss.position = game.arena.player.position+Vector2(370,0)
+		boss.rotation = 0
+		boss.ability.cooldown = 0
+		boss.ability.tick(boss,0.01,true,true)
+		boss.queue_redraw()
 	await create_timer(0.5).timeout
 	if mode in ["upgrade","repair","compare","fleet"]:
 		var fixed: Rect2 = harbor.repair_bar.get_global_rect()

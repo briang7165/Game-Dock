@@ -45,6 +45,8 @@ func run() -> void:
 	save.commit(data)
 	Shipyard.purchase(save,"hull","brig")
 	game.campaign.show_harbor()
+	# Resize immediately while removed main/chart roots await queue_free.
+	root.size = Vector2i(800,450)
 	await frames()
 	var harbor: ShipyardUI = game.panel
 	check(harbor.get_node_or_null("modal") == null,"no modal overlay exists")

@@ -19,6 +19,11 @@ func tap(code: Key) -> void:
 	key(code,false)
 	await frames()
 func click(control: Control) -> void:
+	var ancestor: Node = control.get_parent()
+	while ancestor != null:
+		if ancestor is ScrollContainer: ancestor.ensure_control_visible(control)
+		ancestor = ancestor.get_parent()
+	await frames()
 	var point: Vector2 = root.get_final_transform()*control.get_global_rect().get_center()
 	var motion := InputEventMouseMotion.new()
 	motion.position = point

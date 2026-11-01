@@ -16,12 +16,17 @@ var repair_button: Button
 var repair_bar: PanelContainer
 var repair_label: Label
 var health_bar: ProgressBar
+var currency: Label
+var salvage_label: Label
+var navigation_buttons: Dictionary = {}
+var potential: Label
 var heading: Label
 var active_art: ShipPortrait
 var last_crew_button: Button
 var fleet_buttons: Dictionary = {}
 var upgrade_buttons: Dictionary = {}
 var category_buttons: Dictionary = {}
+var category_grid: GridContainer
 var detail_title: Label
 var detail_text: Label
 var effect_text: Label
@@ -49,7 +54,7 @@ func _ready() -> void:
 	else: category_buttons[category].grab_focus()
 func harbor_theme() -> Theme:
 	var result := Theme.new()
-	result.default_font_size = 16
+	result.default_font_size = 18
 	result.set_color("font_color","Label",PALE)
 	for state: String in ["normal","hover","pressed","focus","disabled"]:
 		var box: StyleBoxFlat = panel_style(Color("31494b") if state in ["hover","focus"] else Color("1b333a"))
@@ -68,7 +73,7 @@ static func panel_style(color: Color) -> StyleBoxFlat:
 	box.content_margin_top = 6
 	box.content_margin_bottom = 6
 	return box
-func label(parent: Node, text: String, font_size: int = 16) -> Label:
+func label(parent: Node, text: String, font_size: int = 18) -> Label:
 	var result := Label.new()
 	result.text = text
 	result.add_theme_font_size_override("font_size",font_size)
@@ -79,7 +84,7 @@ func label(parent: Node, text: String, font_size: int = 16) -> Label:
 func button(parent: Node, title: String, action: Callable) -> Button:
 	var result := Button.new()
 	result.text = title
-	result.custom_minimum_size.y = 32
+	result.custom_minimum_size.y = 48
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	result.pressed.connect(action)
 	parent.add_child(result)
@@ -100,8 +105,18 @@ func fit_window() -> void:
 	# Harbor uses physical-pixel layout on desktop, so 800px windows reflow instead of shrinking 1280px text.
 	var factor: Vector2 = get_viewport().get_final_transform().get_scale()
 	if DisplayServer.get_name() == "headless": factor = Vector2.ONE
-	scale = Vector2.ONE/factor
-	size = get_viewport_rect().size*factor
+	var pixels: Vector2 = get_viewport_rect().size*factor
+	var density: float = clampf(minf(pixels.x/1280.0,pixels.y/720.0),1.0,1.5)
+	scale = Vector2.ONE*density/factor
+	size = pixels/density
+	for control: Node in find_children("*","Button",true,false):
+		control.custom_minimum_size.y = 38 if size.y < 600 else 48
+	if is_instance_valid(category_grid):
+		category_grid.columns = 4 if size.y < 600 else 2
+		for cat: String in category_buttons:
+			category_buttons[cat].text = {"Firepower":"Guns","Sailing & Handling":"Sailing","Defense & Repairs":"Hull","Utility & Economy":"Tools"}[cat] if size.y < 600 else cat
+		var view: Dictionary = FleetState.view(campaign.save.data,selected)
+		potential.text = "Up to %d more levels • %s" % [remaining_levels(view),Shipyard.capacity_text(view).replace("equipment slots","slots")] if size.y < 600 else "%s • up to %d more levels\n%s" % [selected.capitalize(),remaining_levels(view),Shipyard.capacity_text(view)]
 	if is_instance_valid(stock_grid): stock_grid.columns = 2 if size.x >= 1100 else 1
 func build() -> void:
 	var background := ColorRect.new()
@@ -122,6 +137,15 @@ func build() -> void:
 	active_art.custom_minimum_size = Vector2(65,65)
 	header.add_child(active_art)
 	heading = label(header,"",18)
+	var purse := VBoxContainer.new()
+	header.add_child(purse)
+	currency = label(purse,"",30)
+	currency.modulate = GOLD
+	currency.autowrap_mode = TextServer.AUTOWRAP_OFF
+	currency.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	salvage_label = label(purse,"",18)
+	salvage_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	salvage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var repair_box: VBoxContainer = section(page,Color("293a39"))
 	repair_bar = repair_box.get_parent()
 	repair_bar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -134,24 +158,25 @@ func build() -> void:
 	health_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	repair_row.add_child(health_bar)
 	repair_button = button(repair_row,"",inspect.bind("repair","","active"))
-	button(repair_row,"Keep damage → Chart",campaign.show_chart)
+	button(repair_row,"Keep damage → Chart",leave.bind(campaign.show_chart))
 	var navigation := HBoxContainer.new()
 	page.add_child(navigation)
 	for tab: String in ["Upgrades","Fleet","Crew"]:
-		button(navigation,tab,show_page.bind(tab))
-	button(navigation,"Voyage chart",campaign.show_chart)
-	button(navigation,"Captain's papers",campaign.show_identity.bind(true))
+		navigation_buttons[tab] = button(navigation,tab,show_page.bind(tab))
+	navigation_buttons["Voyage chart"] = button(navigation,"Voyage chart",leave.bind(campaign.show_chart))
+	button(navigation,"Captain's papers",leave.bind(campaign.show_identity.bind(true)))
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation",10)
 	page.add_child(body)
 	var left: VBoxContainer = section(body)
 	left.get_parent().size_flags_stretch_ratio = 1.25
-	var tabs := GridContainer.new()
-	tabs.columns = 2
-	left.add_child(tabs)
+	potential = label(left,"",17)
+	category_grid = GridContainer.new()
+	category_grid.columns = 2
+	left.add_child(category_grid)
 	for cat: String in Shipyard.CATEGORIES:
-		category_buttons[cat] = button(tabs,cat,show_category.bind(cat))
+		category_buttons[cat] = button(category_grid,cat,show_category.bind(cat))
 	scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.follow_focus = true
@@ -175,11 +200,11 @@ func build() -> void:
 	detail_icon = UpgradeIcon.new()
 	detail_icon.custom_minimum_size = Vector2(40,40)
 	title_row.add_child(detail_icon)
-	detail_title = label(title_row,"Choose a fitting",20)
+	detail_title = label(title_row,"Choose an upgrade",24)
 	detail_title.modulate = GOLD
 	detail_text = label(detail,"Hover or select a fitting to see what it does.")
 	effect_text = label(detail,"",15)
-	price_text = label(right,"",14)
+	price_text = label(right,"",18)
 	numeric_button = CheckButton.new()
 	numeric_button.text = "Show numbers"
 	numeric_button.toggled.connect(func(value: bool) -> void: advanced_text.visible = value)
@@ -219,7 +244,11 @@ func update_header() -> void:
 	var data: Dictionary = campaign.save.data
 	var hull: HullStats = Shipyard.hull_for(data)
 	var guns: CannonStats = Shipyard.guns_for(data)
-	heading.text = "LANTERN HARBOR • %s • %s / %s\n%d gold • %d salvage • %d cannons / side • %s" % [data.captain,data.ship,str(data.hull).capitalize(),int(data.gold),int(data.get("salvage",0)),guns.gun_count,Shipyard.capacity_text(data)]
+	heading.text = "%s • %s\n%s / %s • %d cannons per side" % ["LANTERN HARBOR",data.captain,data.ship,str(data.hull).capitalize(),guns.gun_count]
+	currency.text = "GOLD  %d" % int(data.gold)
+	salvage_label.text = "%d salvage" % int(data.get("salvage",0))
+	var view: Dictionary = FleetState.view(data,selected)
+	potential.text = "%s • up to %d more levels\n%s" % [selected.capitalize(),remaining_levels(view),Shipyard.capacity_text(view)]
 	Shipyard.apply(active_art.preview_ship,data)
 	var missing: int = ceili(maxf(0,hull.max_health-float(data.health)))
 	repair_label.text = "%s: %d / %d HP • %d missing • %d gold to repair%s" % [data.ship,ceili(data.health),int(hull.max_health),missing,Shipyard.price(data,"repair","")," • Repair recommended" if missing > 0 else " • Ready to sail"]
@@ -229,16 +258,16 @@ func update_header() -> void:
 	# Remains inspectable even when unaffordable, with a clear reason in checkout.
 	repair_button.disabled = missing == 0
 func show_page(tab: String) -> void:
-	if not offer.is_empty(): status.text = "Confirm or cancel your estimate first."; return
+	cancel_navigation()
 	page_name = tab
 	refresh()
 func show_category(cat: String) -> void:
-	if not offer.is_empty(): status.text = "Confirm or cancel your estimate first."; return
+	cancel_navigation()
 	category = cat
 	page_name = "Upgrades"
 	refresh()
 func select_ship(id: String) -> void:
-	if not offer.is_empty(): status.text = "Confirm or cancel your estimate first."; return
+	cancel_navigation()
 	selected = id
 	refresh()
 func build_upgrades() -> void:
@@ -251,7 +280,7 @@ func build_upgrades() -> void:
 	for id: String in ids: chooser.add_item(campaign.save.data.fleet[id].ship+" / "+id.capitalize())
 	if not selected in ids: selected = campaign.save.data.hull
 	chooser.selected = ids.find(selected)
-	chooser.item_selected.connect(func(index: int) -> void: select_ship(ids[index]))
+	chooser.item_selected.connect(func(index: int) -> void: select_ship.call_deferred(ids[index]))
 	select_row.add_child(chooser)
 	stock_grid = GridContainer.new()
 	stock_grid.columns = 2
@@ -269,8 +298,9 @@ func upgrade_card(parent: Node, kind: String, id: String) -> void:
 	icon.symbol = "repair" if kind == "repair" else id
 	icon.custom_minimum_size = Vector2(32,42)
 	row.add_child(icon)
-	var tier: String = " • %d/%d" % [Shipyard.rank(state,id),Shipyard.tier_limit(state,id)] if kind == "upgrade" else ""
-	var pick: Button = button(row,item_name(kind,id)+tier,inspect.bind(kind,id))
+	var pick: Button = button(row,card_text(state,kind,id),inspect.bind(kind,id))
+	pick.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	pick.add_theme_constant_override("outline_size",0)
 	pick.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	pick.mouse_entered.connect(describe.bind(kind,id,false,""))
 	pick.focus_entered.connect(describe.bind(kind,id,false,""))
@@ -289,10 +319,11 @@ func build_fleet() -> void:
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(card)
 		label(card,"%s • %s" % [id.capitalize(),"ACTIVE" if id == campaign.save.data.hull else ("Owned" if owned else "%d gold" % int(Shipyard.HULLS[id].price))])
-		fleet_buttons[id] = button(card,state.ship,func() -> void:
-			if not offer.is_empty(): return
+		label(card,"up to %d more levels • %s" % [remaining_levels(state),Shipyard.capacity_text(state)],17)
+		fleet_buttons[id] = button(card,state.ship+(" • Owned" if owned else " • %d gold" % int(Shipyard.HULLS[id].price)),func() -> void:
+			cancel_navigation()
 			selected = id
-			show_ship(id))
+			show_ship.call_deferred(id))
 	label(stock,"Selected ship: "+selected.capitalize(),17)
 	if campaign.save.data.fleet.has(selected):
 		rename_edit = LineEdit.new()
@@ -300,9 +331,13 @@ func build_fleet() -> void:
 		rename_edit.max_length = 28
 		stock.add_child(rename_edit)
 		button(stock,"Save ship name",func() -> void:
-			if offer.is_empty(): Shipyard.rename_ship(campaign.save,selected,rename_edit.text); refresh())
+			cancel_navigation()
+			Shipyard.rename_ship(campaign.save,selected,rename_edit.text)
+			refresh.call_deferred())
 		button(stock,"Make selected ship active",func() -> void:
-			if offer.is_empty(): Shipyard.activate(campaign.save,selected); refresh())
+			cancel_navigation()
+			Shipyard.activate(campaign.save,selected)
+			refresh.call_deferred())
 		button(stock,"Repair selected owned ship",inspect.bind("repair",""))
 	else: button(stock,"Purchase selected hull",inspect.bind("hull",selected))
 func show_ship(id: String) -> void:
@@ -320,13 +355,15 @@ func build_crew() -> void:
 	label(stock,"One captain-wide specialist follows you between ships. Unlock after 3 wins.")
 	for id: String in VoyageDirector.CREW:
 		last_crew_button = button(stock,VoyageDirector.CREW[id],campaign.appoint_crew.bind(id))
-	button(stock,"Trade all salvage for gold (12 each)",campaign.sell_salvage)
+	button(stock,"Sell %d salvage for %d gold" % [campaign.save.data.get("salvage",0),12*int(campaign.save.data.get("salvage",0))],inspect.bind("salvage",""))
 func item_name(kind: String, id: String) -> String:
+	if kind == "salvage": return "Sell salvage"
 	if kind == "upgrade": return Shipyard.UPGRADES[id].name
 	if kind == "weapon": return Shipyard.WEAPONS[id].name
 	if kind == "hull": return id.capitalize()+" hull"
 	return "Ship Repairs"
 func item_note(kind: String, id: String) -> String:
+	if kind == "salvage": return "Trade your recovered treasure for 12 gold each. Only Confirm sells it."
 	if kind == "upgrade": return Shipyard.UPGRADES[id].note
 	if kind == "weapon": return Shipyard.WEAPONS[id].note
 	if kind == "hull": return Shipyard.HULLS[id].note+" Your other ships stay yours."
@@ -350,16 +387,19 @@ func describe(kind: String, id: String, preparing: bool = false, vessel: String 
 		var after: Dictionary = state.duplicate(true)
 		after.weapon = id
 		impact = "Hit damage %.0f → %.0f • Reload %.1fs → %.1fs" % [Shipyard.guns_for(state).damage,Shipyard.guns_for(after).damage,Shipyard.guns_for(state).reload_seconds,Shipyard.guns_for(after).reload_seconds]
+	elif kind == "salvage": impact = "%d salvage → 0 • Receive %d gold" % [state.get("salvage",0),-cost]
 	else: impact = "Adds one new ship; does not replace your active ship."
 	effect_text.text = "%s • %s\n%s" % [state.ship,availability,impact]
 	price_text.text = "%d gold • 0 salvage • %d gold left%s" % [cost,maxi(0,int(state.gold)-cost),"\nReady to buy? Confirm below." if preparing else "\nSelect the fitting to prepare an estimate."]
+	if kind == "upgrade" and Shipyard.rank(state,id) >= Shipyard.tier_limit(state,id): price_text.text = "MAXED • All levels purchased"
+	if kind == "salvage": price_text.text = "Receive %d gold • Confirm to sell" % -cost
 	var previous: String = selected
 	selected = current_ship
 	advanced_text.text = estimate_text(kind,id)
 	selected = previous
 	confirm_button.disabled = not preparing or availability != "Available"
 func inspect(kind: String, id: String, target: String = "") -> void:
-	if not offer.is_empty(): status.text = "Confirm or cancel the current estimate first."; return
+	cancel_navigation()
 	var vessel: String = campaign.save.data.hull if target == "active" else selected
 	offer = Shipyard.quote(campaign.save.data,kind,id,vessel)
 	describe(kind,id,true,vessel)
@@ -408,3 +448,40 @@ func estimate_text(kind: String, id: String) -> String:
 		"prow": extra = "Ram bonus %.0f%% → %.0f%% • Impact protection %.0f%% → %.0f%%\n" % [20*Shipyard.rank(state,id),20*Shipyard.rank(after,id),15*Shipyard.rank(state,id),15*Shipyard.rank(after,id)]
 	return "%s • %s\n%s\n%s%s\nCondition %.0f → %.0f • Maximum hull %.0f → %.0f\nGuns / side %d → %d • Damage %.0f → %.0f\nReload %.2fs → %.2fs • Speed %.0f → %.0f\nTurn %.2f → %.2f • Range %.0f → %.0f\n%sCost %d gold / 0 salvage • Remaining %d gold" % [state.ship,selected.capitalize(),item_note(kind,id),tier,available,state.health,after.health,a.max_health,b.max_health,ga.gun_count,gb.gun_count,ga.damage,gb.damage,ga.reload_seconds,gb.reload_seconds,a.top_speed,b.top_speed,a.turn_rate,b.turn_rate,ga.projectile_speed*ga.projectile_lifetime,gb.projectile_speed*gb.projectile_lifetime,extra,cost,maxi(0,int(state.gold)-cost)]
 
+func cancel_navigation() -> void:
+	if offer.is_empty(): return
+	offer.clear()
+	confirm_button.disabled = true
+	status.text = "Unpurchased estimate canceled. Nothing spent."
+func leave(action: Callable) -> void:
+	cancel_navigation()
+	action.call_deferred()
+static func remaining_levels(state: Dictionary) -> int:
+	# Maximum purchasable tier steps within the remaining category slots (ignoring gold).
+	var count: int = 0
+	for group: String in Shipyard.CATEGORIES:
+		var choices: Array[int] = []
+		for id: String in Shipyard.CATEGORIES[group]:
+			var remaining: int = maxi(0,Shipyard.tier_limit(state,id)-Shipyard.rank(state,id))
+			if Shipyard.rank(state,id) > 0: count += remaining
+			else: choices.append(remaining)
+		choices.sort()
+		choices.reverse()
+		for i: int in range(mini(choices.size(),maxi(0,Shipyard.slots(state,group)-Shipyard.used(state,group)))): count += choices[i]
+	return count
+func card_text(state: Dictionary, kind: String, id: String) -> String:
+	var cost: int = Shipyard.price(state,kind,id)
+	var availability: String = Shipyard.availability(campaign.save.data,kind,id,selected)
+	var progress: String = ""
+	var price: String = "%d gold" % cost
+	if kind == "upgrade":
+		var rank: int = Shipyard.rank(state,id)
+		var cap: int = Shipyard.tier_limit(state,id)
+		progress = "●".repeat(rank)+"○".repeat(maxi(0,cap-rank))+"  %d of %d • %d left" % [rank,cap,maxi(0,cap-rank)]
+		if rank >= cap: price = "MAXED"
+	elif kind == "weapon":
+		progress = "Equipped" if state.weapon == id else ("Owned" if state.owned_weapons.has(id) else "Not owned")
+		if state.owned_weapons.has(id): price = "Equipped" if state.weapon == id else "Equip Free"
+	if availability == "Unaffordable": price += " • Not enough gold"
+	elif "slots full" in availability: price += " • Slots full"
+	return "%s • %s\n%s\n%s" % [item_name(kind,id),price,progress,item_note(kind,id)]

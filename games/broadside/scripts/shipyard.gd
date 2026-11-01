@@ -87,12 +87,14 @@ static func price(data: Dictionary, kind: String, id: String) -> int:
 		"hull": return int(HULLS[id].price) if HULLS.has(id) else -1
 		"upgrade": return int(UPGRADES[id].price)*(rank(data,id)+1) if UPGRADES.has(id) else -1
 		"weapon": return (0 if data.get("owned_weapons",["standard"]).has(id) else int(WEAPONS[id].price)) if WEAPONS.has(id) else -1
+		"salvage": return -12*int(data.get("salvage",0))
 		"repair": return ceili(maxf(0,hull_for(data).max_health-float(data.health))*0.5)
 	return -1
 
 static func availability(data: Dictionary, kind: String, id: String, selected: String = "") -> String:
 	var vessel_id: String = data.hull if selected.is_empty() else selected
 	if data.active: return "Incompatible • finish the saved encounter"
+	if kind == "salvage": return "Available" if int(data.get("salvage",0)) > 0 else "No salvage to sell"
 	if not HULLS.has(vessel_id): return "Incompatible ship"
 	if kind == "hull":
 		if not HULLS.has(id): return "Incompatible hull"
@@ -119,6 +121,10 @@ static func availability(data: Dictionary, kind: String, id: String, selected: S
 static func preview(data: Dictionary, kind: String, id: String, selected: String = "") -> Dictionary:
 	if availability(data,kind,id,selected) != "Available": return {}
 	var next: Dictionary = data.duplicate(true)
+	if kind == "salvage":
+		next.salvage = 0
+		next.gold = mini(1000000000,int(data.gold)+12*int(data.get("salvage",0)))
+		return next
 	var vessel_id: String = data.hull if selected.is_empty() else selected
 	var vessel: Dictionary = FleetState.view(data,vessel_id)
 	var cost: int = price(vessel,kind,id)
@@ -135,7 +141,7 @@ static func preview(data: Dictionary, kind: String, id: String, selected: String
 		FleetState.capture(vessel)
 		next.fleet[vessel_id] = vessel.fleet[vessel_id].duplicate(true)
 	FleetState.project(next,data.hull)
-	next.gold = int(data.gold)-cost
+	next.gold = mini(1000000000,int(data.gold)-cost)
 	return next
 
 static func quote(data: Dictionary, kind: String, id: String, selected: String = "") -> Dictionary:

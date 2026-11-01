@@ -10,11 +10,19 @@ const CREW: Dictionary = {
 	"carpenter":"Carpenter — repair 8 hull after victories.",
 	"quartermaster":"Quartermaster — 15% more prize gold."}
 
+static func linear(data: Dictionary) -> bool:
+	# An underway pre-M2-F battle keeps its exact legacy route until settlement.
+	return data.get("progression",0) == 1 or not data.get("active",false)
+
 static func reward(data: Dictionary) -> int:
+	if linear(data):
+		var base: int = [80,100,125,155,240][int(data.stop)]
+		return roundi(base*(1+0.25*mini(int(data.chapter)-1,5))*(1+0.2*Shipyard.rank(data,"cargo"))*(1.15 if data.get("crew","none") == "quartermaster" else 1.0))
 	var base: int = 80+15*int(data.stop)+(100 if int(data.stop) == 4 else 0)
 	return roundi(base*(1+0.35*int(data.route))*(1+0.2*Shipyard.rank(data,"cargo"))*(1.15 if data.get("crew","none") == "quartermaster" else 1.0))
 
 static func encounter(data: Dictionary) -> EncounterStats:
+	if linear(data): return linear_encounter(data)
 	var result := EncounterStats.new()
 	result.campaign = true
 	result.theme = posmod(int(data.chapter)-1,THEMES.size())
@@ -38,6 +46,47 @@ static func encounter(data: Dictionary) -> EncounterStats:
 	result.difficulty = chapter
 	result.route = route
 	return result
+
+
+static func linear_encounter(data: Dictionary) -> EncounterStats:
+	var result := EncounterStats.new()
+	var chapter: int = mini(int(data.chapter),6)
+	var stop: int = int(data.stop)
+	result.campaign = true
+	result.linear_progression = true
+	result.difficulty = chapter
+	result.stage = (chapter-1)*5+stop
+	result.relief = mini(int(data.get("setbacks",0)),3)
+	result.theme = posmod(int(data.chapter)-1,THEMES.size())
+	result.layout = posmod(int(data.seed)+int(data.chapter)*7+stop*13,3)
+	result.route = 1 if stop == 2 and chapter > 1 else 0 # geography only; no player difficulty choice
+	result.location_name = preload("res://scripts/voyage_chart.gd").NAMES[stop]
+	if int(data.chapter) > 1: result.location_name = ["Emerald","Ember","Fogbound","Thunder"][result.theme]+" "+["Strait","Reef","Shoals","Reach","Crown"][stop]
+	result.location_subtitle = "Chapter %d • Destination %d / 5 • %s" % [int(data.chapter),stop+1,THEMES[result.theme]]
+	if chapter == 1:
+		result.enemy_roles.assign([["raider"],["raider"],["hunter"],["heavy"],["warden"]][stop])
+	else:
+		result.enemy_roles.assign([["hunter"],["heavy"],["hunter","raider"],["heavy","hunter"],["warden"]][stop])
+		if chapter >= 3 and stop in [2,3]: result.enemy_roles.append("raider")
+	if stop == 4:
+		result.boss_name = BOSSES[posmod(int(data.chapter)-1,3)]
+		result.enemy_roles.assign([["warden"],["corsair"],["regent"]][posmod(int(data.chapter)-1,3)])
+		if chapter >= 3: result.enemy_roles.append("raider")
+	if result.relief >= 2 and result.enemy_roles.size() > 1: result.enemy_roles.resize(result.enemy_roles.size()-1)
+	return result
+
+static func preview_text(data: Dictionary) -> String:
+	var info: EncounterStats = encounter(data)
+	var names: Array[String] = []
+	for role: String in info.enemy_roles: names.append({"raider":"Raider","hunter":"Hunter","heavy":"Heavy ship"}.get(role,info.boss_name))
+	return "%s • %d gold + salvage" % [", ".join(names),reward(data)]
+
+static func preparation(data: Dictionary) -> String:
+	if float(data.health) < Shipyard.hull_for(data).max_health*0.8: return "Suggested: repair your hull, or keep your gold and risk the damage."
+	if int(data.get("setbacks",0)) >= 2: return "Harbor support: fewer escorts and weakened foes on this retry. Keep your upgrades."
+	if int(data.stop) >= 3 and Shipyard.guns_for(data).gun_count == 1: return "Suggested: an extra cannon or stronger hull. A skilled small ship can still win."
+	if int(data.chapter) > 1: return "Suggested: check your guns and hull. Better sails and steering help dodge volleys."
+	return "Suggested: keep moving and turn your side toward the enemy to fire."
 
 static func islands(encounter_data: EncounterStats) -> Array[Vector2]:
 	# Wide connected lanes, no rocks within 180 units of any spawn. Fixed safe
@@ -75,6 +124,16 @@ static func configure(ship: BroadsideShip, role: String, info: EncounterStats) -
 		ship.guns.reload_seconds = 3.8
 		ship.tactics.ai_telegraph = 1.2
 		ship.ability = BossAbility.new(role)
+	if info.linear_progression:
+		if role not in ["warden","corsair","regent"]:
+			ship.hull.max_health += mini(info.stage,30)*(3 if role == "heavy" else 2)
+			ship.guns.gun_count = mini(ship.hull.cannon_capacity,ship.guns.gun_count+(1 if info.difficulty >= 4 else 0))
+		else:
+			ship.hull.max_health = minf(160,78+16*(info.difficulty-1))
+			ship.guns.gun_count = 1 if info.difficulty == 1 else 2
+		ship.hull.max_health *= 1.0-0.08*info.relief
+		ship.hull.top_speed *= 1.0+0.02*(info.difficulty-1)
+		ship.guns.reload_seconds *= 1.0-0.025*(info.difficulty-1)
 	ship.health = ship.hull.max_health
 	ship.set_cannon_loadout(ship.guns)
 	ship.modulate = Color("ffd0b1") if not info.boss_name.is_empty() else Color.WHITE

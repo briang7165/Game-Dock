@@ -45,13 +45,13 @@ func run() -> void:
 	data.route = 0
 	var reward: int = VoyageDirector.reward(data)
 	data.route = 2
-	check(VoyageDirector.reward(data) > reward,"danger route offers greater prize gold")
+	check(VoyageDirector.reward(data) == reward,"legacy route field cannot change new progression rewards")
 	data.crew = "gunner"
 	check(Shipyard.guns_for(data).reload_seconds < 3,"gunner berth changes reload")
 	data.crew = "navigator"
 	check(Shipyard.hull_for(data).top_speed > 165,"navigator berth changes sailing")
 	data.crew = "quartermaster"
-	check(VoyageDirector.reward(data) > roundi(reward*1.7),"quartermaster changes rewards")
+	check(VoyageDirector.reward(data) == roundi(reward*1.15),"quartermaster changes rewards")
 	data.weapon = "chain"
 	check(Shipyard.guns_for(data).damage == 10 and Shipyard.guns_for(data).slow_seconds == 2,"chain shot trades damage for temporary rigging effect")
 	var save := CampaignSave.new()
@@ -59,7 +59,12 @@ func run() -> void:
 	var legacy: Dictionary = CampaignSave.fresh("Test","Test",0,123)
 	for key: String in ["crew","ships_sunk","gold_earned","journal","salvage","weapon"]: legacy.erase(key)
 	check(save.commit(legacy) and save.load_game() and Shipyard.guns_for(save.data).damage == 16,"M2-A save without later fields loads with safe defaults")
-	save.begin_encounter(2)
+	legacy = save.data.duplicate(true)
+	legacy.erase("progression")
+	legacy.active = true
+	legacy.route = 2
+	legacy.attempt = 1
+	save.commit(legacy)
 	save.begin_encounter(0)
 	check(save.data.route == 2 and save.data.attempt == 1,"resuming cannot reroll an active route or attempt")
 	save.settle(false,0,0)

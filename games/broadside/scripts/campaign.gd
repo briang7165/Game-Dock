@@ -113,49 +113,27 @@ func identity() -> String:
 
 func show_chart() -> void:
 	in_battle = false
-	var column := reset_screen("chart")
-	column.add_child(game.make_label("Chart of the Seas — Chapter %d" % int(save.data.chapter),30))
-	column.add_child(game.make_label(identity(),19))
-	chart = preload("res://scripts/voyage_chart.gd").new()
-	chart.state = save.data
-	column.add_child(chart)
-	var destination: EncounterStats = VoyageDirector.encounter(save.data)
-	column.add_child(game.make_label("Next: "+destination.location_name+(" • "+destination.boss_name if not destination.boss_name.is_empty() else ""),20))
-	status = game.make_label(save.error if not save.error.is_empty() else "Trade Winds: safer duels • Reef Passage: hazards / salvage • Blackwater: elite prizes",16)
-	column.add_child(status)
-	if save.data.active:
-		button(column,"Resume interrupted encounter",start_travel.bind(int(save.data.route))).grab_focus()
-	else:
-		var routes := HBoxContainer.new()
-		column.add_child(routes)
-		for route: int in range(3):
-			var option: Dictionary = save.data.duplicate(true)
-			option.route = route
-			var info: EncounterStats = VoyageDirector.encounter(option)
-			var choice: Button = button(routes,"%s • %d foe%s • %d gold" % [VoyageDirector.ROUTES[route],info.enemy_roles.size(),"s" if info.enemy_roles.size() > 1 else "",VoyageDirector.reward(option)],start_travel.bind(route))
-			choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			choice.tooltip_text = ["Safer duels, moderate gold. Always available after defeat.","More reefs; extra salvage and gold.","Elite hunters and later fleets; the greatest reward."][route]
-			if route == 0: choice.grab_focus()
-	var navigation := HBoxContainer.new()
-	column.add_child(navigation)
-	button(navigation,"Safe harbor / Shipyard",show_harbor)
-	button(navigation,"Voyage journal",show_journal)
-	button(navigation,"Main menu",game.show_menu)
+	reset_screen("chart")
+	game.clear_ui()
+	var screen := preload("res://scripts/voyage_screen.gd").new()
+	screen.campaign = self
+	game.ui.add_child(screen)
+	game.panel = screen
+	chart = screen.chart
+	status = screen.status
 
 func start_travel(route: int = 0) -> void:
 	if not save.begin_encounter(route):
-		status.text = save.error
+		var message: String = save.error
+		show_chart()
+		status.text = message
 		return
 	show_chart()
 	travelling = true
 	travel_time = 0
 	game.screen = "travel"
 	status.text = "Under way • Enter / Space / Escape to skip sailing"
-	# Existing chart buttons become only a skip control during the interlude.
-	var column: Node = chart.get_parent()
-	for child: Node in column.find_children("*","Button",true,false):
-		child.disabled = true
-	button(column,"Skip sailing",enter_battle).grab_focus()
+	game.panel.begin_travel()
 
 func _process(delta: float) -> void:
 	if travelling:
@@ -201,7 +179,7 @@ func finish(victory: bool) -> void:
 		return
 	reset_screen("campaign_result")
 	game.audio.play_effect("victory" if victory else "defeat")
-	game.menu("Victory at sea" if victory else "Rescued by harbor hands",identity()+"\n"+("Destination cleared. Earned %d gold and salvage. Hull %d. Your voyage continues." % [last_reward,int(save.data.health)] if victory else "Your captain and ship are safe. Emergency refit; retry this destination."),{"Safe harbor":show_harbor,"Chart of the Seas":show_chart,"Main menu":game.show_menu})
+	game.menu("Victory at sea" if victory else "Rescued by harbor hands",identity()+"\nNext: "+VoyageDirector.encounter(save.data).location_name+"\n"+("Destination cleared. Earned %d gold and salvage. Hull %d. Your voyage continues." % [last_reward,int(save.data.health)] if victory else "Your captain and ship are safe. Emergency refit; retry this destination."),{"Safe harbor":show_harbor,"Set Sail":start_travel,"Chart of the Seas":show_chart,"Main menu":game.show_menu})
 
 func retreat() -> void:
 	finish(false)
@@ -215,14 +193,7 @@ func show_harbor() -> void:
 	game.panel = harbor
 
 func sell_salvage() -> void:
-	if save.data.active:
-		status.text = "Finish the current encounter before trading."
-		return
-	var next: Dictionary = save.data.duplicate(true)
-	next.gold = mini(1000000000,int(next.gold)+int(next.get("salvage",0))*12)
-	next.salvage = 0
-	save.commit(next)
-	show_harbor()
+	if game.panel is ShipyardUI: game.panel.inspect("salvage","")
 
 func appoint_crew(id: String) -> void:
 	if save.data.active or (int(save.data.wins) < 3 and id != "none"):

@@ -66,7 +66,7 @@ func run() -> void:
 	game.campaign.enter_battle()
 	await frames(2)
 	check(game.screen == "battle" and game.campaign.in_battle and game.arena.player.health == 60,"skip enters real fragile-sloop combat")
-	game.arena.enemy.take_damage(1000)
+	for enemy: BroadsideShip in game.arena.enemies: enemy.take_damage(1000)
 	await frames(60)
 	check(game.screen == "campaign_result" and save.data.stop == stop+1,"real enemy sinking saves campaign result")
 	game.campaign.show_harbor()

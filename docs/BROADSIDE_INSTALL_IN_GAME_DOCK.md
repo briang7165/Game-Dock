@@ -88,3 +88,7 @@ Choose the **Broadside playable Windows ZIP** run for the M2-D pull request. Dow
 ## M2-E update (0.2.4-m2e)
 
 Use the M2-E PR's linked playable Windows artifact. Close Broadside and replace all three matching files in Game Dock's existing `games/broadside` folder, then refresh the library. M2-E keeps M2-D's version-2 fleet save format and the same `%APPDATA%/Broadside` save/settings location. Do not delete that folder or start a new voyage to install the update. Keep a backup of your campaign and the old three game files for rollback. No Godot installation is needed.
+
+## M2-F update (0.2.5-m2f)
+
+Download the M2-F PR's successful Windows artifact. Extract its wrapper and inner game ZIP. Close Broadside, then replace Broadside.exe, Broadside.pck and game.json together in Game Dock's existing games/broadside folder and refresh. Keep %APPDATA%/Broadside untouched; no new campaign or Godot installation is required. Underway older battles retain their old rules until completed, then follow the new automatic progression. Back up saves and retain the older three game files for rollback.

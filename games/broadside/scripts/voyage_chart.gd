@@ -2,70 +2,71 @@ extends Control
 var state: Dictionary = {}
 var travel: float = 0.0
 const NAMES: Array[String] = ["The Sable Channel","Reefrunner Pass","Widowmaker Shoals","Blackwater Reach","Stormwatch Cay"]
-
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip_contents = true
 	custom_minimum_size = Vector2(0,180)
-
+	resized.connect(queue_redraw)
 func point(index: int) -> Vector2:
-	return Vector2(90+index*(size.x-180)/4.0,size.y*0.45+sin(index*2.0)*size.y*0.14)
-
+	var positions: Array[Vector2] = [Vector2(0.08,0.78),Vector2(0.28,0.12),Vector2(0.50,0.72),Vector2(0.72,0.08),Vector2(0.92,0.70)]
+	return Vector2(65,30)+positions[index]*Vector2(size.x-130,maxf(35,size.y-120))
+func harbor() -> Vector2: return Vector2(28,size.y-28)
+func curve(from: Vector2,to: Vector2,t: float) -> Vector2:
+	var first: Vector2 = from+Vector2((to.x-from.x)*0.65,0)
+	var second: Vector2 = to-Vector2((to.x-from.x)*0.65,0)
+	return from.bezier_interpolate(first,second,to,t)
 func _draw() -> void:
 	draw_style_box(chart_style(),Rect2(Vector2.ZERO,size))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(state.get("seed",1))+int(state.get("chapter",1))*31
-	for i: int in range(18):
+	# Original ink-and-wash island clusters use the whole chart, not a horizontal ribbon.
+	for i: int in range(30):
 		var at := Vector2(rng.randf_range(25,size.x-25),rng.randf_range(25,size.y-25))
+		var near_stop: bool = false
+		for stop: int in range(5): near_stop = near_stop or at.distance_to(point(stop)+Vector2(0,20)) < 100
+		if near_stop: continue
 		var rock := PackedVector2Array()
-		for angle: int in range(8):
-			rock.append(at+Vector2.from_angle(angle*TAU/8)*rng.randf_range(9,23))
-		draw_colored_polygon(rock,Color("8b9872"))
-		draw_polyline(rock,Color("66785e"),2,true)
-	for wave: int in range(int(size.x/70)):
-		var origin := Vector2(35+wave*70,38+sin(wave*2.7)*17)
-		draw_arc(origin,14,0.3,2.8,9,Color("98a68a"),1.2,true)
-	for i: int in range(4):
-		for dot: int in range(20):
-			draw_circle(point(i).lerp(point(i+1),dot/20.0),1.8,Color("886d4c"))
+		var radius: float = rng.randf_range(16,45)
+		for angle: int in range(12): rock.append(at+Vector2.from_angle(angle*TAU/12)*radius*rng.randf_range(0.6,1.2))
+		draw_colored_polygon(rock,Color("93a587"))
+		draw_polyline(rock,Color("607d71"),3,true)
+		var interior := PackedVector2Array()
+		for vertex: Vector2 in rock: interior.append(at+(vertex-at)*0.65)
+		draw_colored_polygon(interior,Color("778b65"))
+	for i: int in range(40):
+		var at := Vector2(rng.randf_range(15,size.x-15),rng.randf_range(20,size.y-20))
+		draw_arc(at,12,0.3,2.8,9,Color("a5ae94"),1.2,true)
+	var current: int = int(state.get("stop",0))
+	for i: int in range(5):
+		var begin: Vector2 = harbor() if i == 0 else point(i-1)
+		for dot: int in range(45):
+			draw_circle(curve(begin,point(i),dot/44.0),2.3,Color("537868") if i < current else Color("957955"))
 	var font: Font = ThemeDB.fallback_font
 	for i: int in range(5):
 		var at: Vector2 = point(i)
-		draw_circle(at,12,Color("6a7753") if i < int(state.get("stop",0)) else (Color("814735") if i == 4 else Color("386c73")))
-		draw_circle(at,5,Color("edd9a8"))
+		if i == current: draw_arc(at,25,0,TAU,48,Color("bc7b2d"),4,true)
+		draw_circle(at,17,Color("497660") if i < current else (Color("874432") if i == 4 else Color("386c73")))
+		draw_string(font,at+Vector2(-7,7),"✓" if i < current else str(i+1),HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color("fff0c8"))
 		var destination: Dictionary = state.duplicate(true)
 		destination.stop = i
-		var place: EncounterStats = VoyageDirector.encounter(destination)
-		var label: String = place.location_name if i != 4 else "Flagship • BOSS"
-		draw_string(font,at+Vector2(-65,35),label,HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color("403b2b"))
-	var stop: int = int(state.get("stop",0))
-	# Three visible alternative lanes reconnect at the destination; chart choices
-	# select risk/reward, not an irreversible progression dead end.
-	var begin: Vector2 = point(maxi(0,stop-1)) if stop > 0 else Vector2(20,size.y-25)
-	for route: int in range(3):
-		var via: Vector2 = begin.lerp(point(stop),0.5)+Vector2(0,(route-1)*45)
-		for dot: int in range(16):
-			var t: float = dot/15.0
-			var route_point: Vector2 = begin.lerp(via,t).lerp(via.lerp(point(stop),t),t)
-			draw_circle(route_point,2,Color("9b573e") if route == int(state.get("route",0)) else Color("9d926f"))
-	var at: Vector2 = point(maxi(0,stop-1)).lerp(point(stop),travel if travel > 0 else 1.0)
-	if stop == 0 and travel > 0:
-		at = Vector2(20,size.y-25).lerp(point(0),travel)
-	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-21),at+Vector2(12,12),at+Vector2(-12,12)]),Color("69472f"))
-	draw_line(at+Vector2(0,-16),at+Vector2(0,8),Color("403b2b"),2)
-	draw_colored_polygon(PackedVector2Array([at+Vector2(1,-15),at+Vector2(16,2),at+Vector2(1,2)]),Color("fff0c8"))
-	var hull_id: String = str(state.get("hull","sloop"))
-	if hull_id != "sloop":
-		for mast: int in range(2 if hull_id in ["frigate","galleon"] else 1):
-			var offset := Vector2(-9-mast*9,3+mast*3)
-			draw_line(at+offset+Vector2(0,-14),at+offset+Vector2(0,8),Color("403b2b"),2)
-			draw_colored_polygon(PackedVector2Array([at+offset+Vector2(1,-13),at+offset+Vector2(12,1),at+offset+Vector2(1,1)]),Color("fff0c8"))
-	# Original compass rose, chart-only illustration.
-	var compass := Vector2(size.x-55,45)
-	draw_arc(compass,22,0,TAU,32,Color("886d4c"),1,true)
+		var name: String = VoyageDirector.encounter(destination).location_name
+		var split: int = name.rfind(" ")
+		var lines: Array[String] = [name.left(split),name.substr(split+1)]
+		for line: int in range(2):
+			var width: float = font.get_string_size(lines[line],HORIZONTAL_ALIGNMENT_LEFT,-1,16).x
+			draw_string(font,at+Vector2(-width/2,40+line*19),lines[line],HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("393b2d"))
+		if i == 4: draw_string(font,at+Vector2(-23,-30),"BOSS",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("813f2c"))
+	var begin: Vector2 = harbor() if current == 0 else point(current-1)
+	var at: Vector2 = curve(begin,point(current),travel) if travel > 0 else begin
+	draw_circle(at,21,Color("f6e7b9"))
+	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-19),at+Vector2(11,12),at+Vector2(-11,12)]),Color("69472f"))
+	draw_line(at+Vector2(0,-17),at+Vector2(0,9),Color("403b2b"),2)
+	draw_colored_polygon(PackedVector2Array([at+Vector2(1,-15),at+Vector2(16,2),at+Vector2(1,2)]),Color("fff8da"))
+	var compass := Vector2(size.x-35,32)
+	draw_arc(compass,18,0,TAU,32,Color("886d4c"),1,true)
 	for i: int in range(4):
 		var d := Vector2.from_angle(i*PI/2)
-		draw_colored_polygon(PackedVector2Array([compass+d*27,compass+d.rotated(PI/2)*5,compass-d.rotated(PI/2)*5]),Color("69563e"))
-
+		draw_colored_polygon(PackedVector2Array([compass+d*23,compass+d.rotated(PI/2)*4,compass-d.rotated(PI/2)*4]),Color("69563e"))
 func chart_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("d8c99c")

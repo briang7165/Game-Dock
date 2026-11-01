@@ -121,11 +121,14 @@ static func availability(data: Dictionary, kind: String, id: String, selected: S
 static func preview(data: Dictionary, kind: String, id: String, selected: String = "") -> Dictionary:
 	if availability(data,kind,id,selected) != "Available": return {}
 	var next: Dictionary = data.duplicate(true)
+	if kind == "salvage":
+		next.salvage = 0
+		next.gold = mini(1000000000,int(data.gold)+12*int(data.get("salvage",0)))
+		return next
 	var vessel_id: String = data.hull if selected.is_empty() else selected
 	var vessel: Dictionary = FleetState.view(data,vessel_id)
 	var cost: int = price(vessel,kind,id)
 	match kind:
-		"salvage": next.salvage = 0
 		"hull": next.fleet[id] = FleetState.bare(id)
 		"upgrade":
 			vessel.upgrades[id] = rank(vessel,id)+1

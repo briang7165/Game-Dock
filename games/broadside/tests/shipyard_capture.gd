@@ -37,7 +37,14 @@ func run() -> void:
 		await process_frame
 		harbor.inspect("weapon","carronade")
 	if mode == "repair": harbor.inspect("repair","","active")
-	if mode == "chart": game.campaign.show_chart()
+	if mode in ["chart","chart-progress","travel"]:
+		if mode != "chart":
+			data = save.data.duplicate(true)
+			data.chapter = 3
+			data.stop = 3
+			save.commit(data)
+		game.campaign.show_chart()
+		if mode == "travel": game.campaign.start_travel()
 	if mode == "menu": game.show_menu()
 	if mode == "boss":
 		var boss_data: Dictionary = CampaignSave.fresh("Test","Test",0,123)
@@ -62,6 +69,11 @@ func run() -> void:
 		assert(not footer.intersects(actions),"price and confirmation do not overlap")
 		assert(harbor.get_global_rect().encloses(actions),"confirmation fits window")
 		print("PASS: pinned repairs and unclipped checkout at ",root.size)
+	if mode in ["chart","chart-progress","travel"]:
+		var screen: Control = game.panel
+		assert(screen.get_global_rect().encloses(screen.sail_button.get_global_rect()),"Set Sail remains inside screen")
+		assert(game.campaign.chart.size.y/screen.size.y > (0.65 if screen.size.y >= 720 else 0.4),"map dominates large screen and reflows on small screens")
+		print("PASS: map height share ",game.campaign.chart.size.y/screen.size.y)
 	await RenderingServer.frame_post_draw
 	if args.size() > 0:
 		var screenshot: Image = root.get_texture().get_image()

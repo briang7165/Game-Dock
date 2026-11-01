@@ -14,7 +14,7 @@ static func clean_name(value: String, fallback: String) -> String:
 	return fallback if result.is_empty() else result
 
 static func fresh(captain: String, ship: String, pennant: int = 0, voyage_seed: int = 0) -> Dictionary:
-	var initial: Dictionary = {"version":VERSION,"captain":clean_name(captain,"Captain Rowan"),"ship":clean_name(ship,"The Wayfarer"),"pennant":clampi(pennant,0,2),"seed":voyage_seed if voyage_seed != 0 else randi_range(1,2147483646),"chapter":1,"stop":0,"attempt":0,"active":false,"route":0,"gold":0,"salvage":0,"weapon":"standard","crew":"none","ships_sunk":0,"gold_earned":0,"journal":[],"hull":"sloop","upgrades":{},"health":60.0,"wins":0,"losses":0,"bosses":0}
+	var initial: Dictionary = {"version":VERSION,"progression":1,"setbacks":0,"captain":clean_name(captain,"Captain Rowan"),"ship":clean_name(ship,"The Wayfarer"),"pennant":clampi(pennant,0,2),"seed":voyage_seed if voyage_seed != 0 else randi_range(1,2147483646),"chapter":1,"stop":0,"attempt":0,"active":false,"route":0,"gold":0,"salvage":0,"weapon":"standard","crew":"none","ships_sunk":0,"gold_earned":0,"journal":[],"hull":"sloop","upgrades":{},"health":60.0,"wins":0,"losses":0,"bosses":0}
 
 	return FleetState.migrate(initial)
 
@@ -22,6 +22,9 @@ func valid(value: Variant) -> bool:
 	if not value is Dictionary:
 		return false
 	var d: Dictionary = value
+	for key: String in ["progression","setbacks"]:
+		var flag: Variant = d.get(key,0)
+		if not (flag is int or flag is float) or not is_finite(float(flag)) or flag != floorf(flag) or flag < 0 or flag > (1 if key == "progression" else 3): return false
 	if d.get("version") != 1 and d.get("version") != VERSION:
 		return false
 	for key: String in ["captain","ship","hull"]:
@@ -154,11 +157,12 @@ func commit(next: Dictionary) -> bool:
 	data = next.duplicate(true)
 	return true
 
-func begin_encounter(route: int = 0) -> bool:
+func begin_encounter(_legacy_route: int = 0) -> bool:
 	var next: Dictionary = data.duplicate(true)
 	if not next.active:
 		next.attempt = (int(next.attempt)+1) % 1000000000
-		next.route = clampi(route,0,2)
+		next.route = 0
+		next.progression = 1
 	next.active = true
 	return commit(next)
 
@@ -169,6 +173,7 @@ func settle(victory: bool, health: float, sunk: int = 1) -> bool:
 	next.active = false
 	next.health = maxf(0,health)
 	if victory:
+		next.setbacks = 0
 		next.wins = mini(int(next.wins)+1,1000000000)
 		if int(next.stop) == 4:
 			next.bosses = mini(int(next.bosses)+1,1000000000)
@@ -176,21 +181,22 @@ func settle(victory: bool, health: float, sunk: int = 1) -> bool:
 		if int(next.stop) == 0:
 			next.chapter = int(next.chapter)%1000000000+1
 	else:
+		next.setbacks = mini(int(data.get("setbacks",0))+1,3)
 		next.losses = mini(int(next.losses)+1,1000000000)
 	if victory:
 		var reward: int = VoyageDirector.reward(data)
 		next.gold = mini(1000000000,int(next.gold)+reward)
 		next.gold_earned = mini(1000000000,int(data.get("gold_earned",0))+reward)
-		next.salvage = mini(1000000000,int(data.get("salvage",0))+2+Shipyard.rank(data,"cargo")+int(data.route))
+		next.salvage = mini(1000000000,int(data.get("salvage",0))+2+Shipyard.rank(data,"cargo")+(mini(int(data.chapter)-1,4) if VoyageDirector.linear(data) else int(data.route)))
 		next.health = clampf(health+5*Shipyard.rank(data,"carpenter")+(8 if data.get("crew","none") == "carpenter" else 0),1,Shipyard.hull_for(data).max_health)
 	else:
 		# Rescue never removes upgrades or the hull. Starter gets a full emergency refit.
 		next.gold = maxi(0,int(next.gold)-mini(25,int(next.gold)/4))
 		next.health = maxf(60,Shipyard.hull_for(data).max_health*0.45)
-		next.salvage = mini(1000000000,int(data.get("salvage",0))+1)
+		next.salvage = mini(1000000000,int(data.get("salvage",0))+(1+mini(int(data.chapter),4) if VoyageDirector.linear(data) else 1))
 	next.ships_sunk = mini(1000000000,int(data.get("ships_sunk",0))+maxi(0,sunk))
 	var entries: Array = data.get("journal",[]).duplicate()
-	entries.append("Chapter %d • %s • %s%s" % [int(data.chapter),VoyageDirector.ROUTES[int(data.route)],"Victory" if victory else "Rescued",(" against "+VoyageDirector.encounter(data).boss_name) if int(data.stop) == 4 else ""])
+	entries.append("Chapter %d • %s • %s%s" % [int(data.chapter),("Destination %d / 5" % (int(data.stop)+1)) if VoyageDirector.linear(data) else VoyageDirector.ROUTES[int(data.route)],"Victory" if victory else "Rescued",(" against "+VoyageDirector.encounter(data).boss_name) if int(data.stop) == 4 else ""])
 	while entries.size() > 8: entries.pop_front()
 	next.journal = entries
 	return commit(next)

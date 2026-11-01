@@ -26,6 +26,7 @@ var last_crew_button: Button
 var fleet_buttons: Dictionary = {}
 var upgrade_buttons: Dictionary = {}
 var category_buttons: Dictionary = {}
+var category_grid: GridContainer
 var detail_title: Label
 var detail_text: Label
 var effect_text: Label
@@ -110,6 +111,12 @@ func fit_window() -> void:
 	size = pixels/density
 	for control: Node in find_children("*","Button",true,false):
 		control.custom_minimum_size.y = 38 if size.y < 600 else 48
+	if is_instance_valid(category_grid):
+		category_grid.columns = 4 if size.y < 600 else 2
+		for cat: String in category_buttons:
+			category_buttons[cat].text = {"Firepower":"Guns","Sailing & Handling":"Sailing","Defense & Repairs":"Hull","Utility & Economy":"Tools"}[cat] if size.y < 600 else cat
+		var view: Dictionary = FleetState.view(campaign.save.data,selected)
+		potential.text = "Up to %d more levels • %s" % [remaining_levels(view),Shipyard.capacity_text(view).replace("equipment slots","slots")] if size.y < 600 else "%s • up to %d more levels\n%s" % [selected.capitalize(),remaining_levels(view),Shipyard.capacity_text(view)]
 	if is_instance_valid(stock_grid): stock_grid.columns = 2 if size.x >= 1100 else 1
 func build() -> void:
 	var background := ColorRect.new()
@@ -165,11 +172,11 @@ func build() -> void:
 	var left: VBoxContainer = section(body)
 	left.get_parent().size_flags_stretch_ratio = 1.25
 	potential = label(left,"",17)
-	var tabs := GridContainer.new()
-	tabs.columns = 2
-	left.add_child(tabs)
+	category_grid = GridContainer.new()
+	category_grid.columns = 2
+	left.add_child(category_grid)
 	for cat: String in Shipyard.CATEGORIES:
-		category_buttons[cat] = button(tabs,cat,show_category.bind(cat))
+		category_buttons[cat] = button(category_grid,cat,show_category.bind(cat))
 	scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.follow_focus = true
@@ -241,7 +248,7 @@ func update_header() -> void:
 	currency.text = "GOLD  %d" % int(data.gold)
 	salvage_label.text = "%d salvage" % int(data.get("salvage",0))
 	var view: Dictionary = FleetState.view(data,selected)
-	potential.text = "%s • %d upgrade levels left\n%s" % [selected.capitalize(),remaining_levels(view),Shipyard.capacity_text(view)]
+	potential.text = "%s • up to %d more levels\n%s" % [selected.capitalize(),remaining_levels(view),Shipyard.capacity_text(view)]
 	Shipyard.apply(active_art.preview_ship,data)
 	var missing: int = ceili(maxf(0,hull.max_health-float(data.health)))
 	repair_label.text = "%s: %d / %d HP • %d missing • %d gold to repair%s" % [data.ship,ceili(data.health),int(hull.max_health),missing,Shipyard.price(data,"repair","")," • Repair recommended" if missing > 0 else " • Ready to sail"]
@@ -273,7 +280,7 @@ func build_upgrades() -> void:
 	for id: String in ids: chooser.add_item(campaign.save.data.fleet[id].ship+" / "+id.capitalize())
 	if not selected in ids: selected = campaign.save.data.hull
 	chooser.selected = ids.find(selected)
-	chooser.item_selected.connect(func(index: int) -> void: select_ship(ids[index]))
+	chooser.item_selected.connect(func(index: int) -> void: select_ship.call_deferred(ids[index]))
 	select_row.add_child(chooser)
 	stock_grid = GridContainer.new()
 	stock_grid.columns = 2
@@ -312,7 +319,7 @@ func build_fleet() -> void:
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(card)
 		label(card,"%s • %s" % [id.capitalize(),"ACTIVE" if id == campaign.save.data.hull else ("Owned" if owned else "%d gold" % int(Shipyard.HULLS[id].price))])
-		label(card,"%d upgrade levels left • %s" % [remaining_levels(state),Shipyard.capacity_text(state)],17)
+		label(card,"up to %d more levels • %s" % [remaining_levels(state),Shipyard.capacity_text(state)],17)
 		fleet_buttons[id] = button(card,state.ship+(" • Owned" if owned else " • %d gold" % int(Shipyard.HULLS[id].price)),func() -> void:
 			cancel_navigation()
 			selected = id
@@ -384,6 +391,7 @@ func describe(kind: String, id: String, preparing: bool = false, vessel: String 
 	else: impact = "Adds one new ship; does not replace your active ship."
 	effect_text.text = "%s • %s\n%s" % [state.ship,availability,impact]
 	price_text.text = "%d gold • 0 salvage • %d gold left%s" % [cost,maxi(0,int(state.gold)-cost),"\nReady to buy? Confirm below." if preparing else "\nSelect the fitting to prepare an estimate."]
+	if kind == "upgrade" and Shipyard.rank(state,id) >= Shipyard.tier_limit(state,id): price_text.text = "MAXED • All levels purchased"
 	if kind == "salvage": price_text.text = "Receive %d gold • Confirm to sell" % -cost
 	var previous: String = selected
 	selected = current_ship
@@ -449,8 +457,17 @@ func leave(action: Callable) -> void:
 	cancel_navigation()
 	action.call_deferred()
 static func remaining_levels(state: Dictionary) -> int:
+	# Maximum purchasable tier steps within the remaining category slots (ignoring gold).
 	var count: int = 0
-	for id: String in Shipyard.UPGRADES: count += maxi(0,Shipyard.tier_limit(state,id)-Shipyard.rank(state,id))
+	for group: String in Shipyard.CATEGORIES:
+		var choices: Array[int] = []
+		for id: String in Shipyard.CATEGORIES[group]:
+			var remaining: int = maxi(0,Shipyard.tier_limit(state,id)-Shipyard.rank(state,id))
+			if Shipyard.rank(state,id) > 0: count += remaining
+			else: choices.append(remaining)
+		choices.sort()
+		choices.reverse()
+		for i: int in range(mini(choices.size(),maxi(0,Shipyard.slots(state,group)-Shipyard.used(state,group)))): count += choices[i]
 	return count
 func card_text(state: Dictionary, kind: String, id: String) -> String:
 	var cost: int = Shipyard.price(state,kind,id)

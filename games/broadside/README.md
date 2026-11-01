@@ -74,3 +74,7 @@ The harbor now retains one independently named/equipped vessel of each class. Bu
 ## M2-E polish
 
 Repairs remain above the harbor inventory and require confirmation. Upgrade details and checkout stay in one panel; Show numbers expands comparisons. The 0.65 camera and compact menus show more content. Named bosses now use warned special moves with cooldowns. Original “Lanterns on the Rolling Tide” arrangements crossfade between harbor, battle and boss contexts. See [M2-E validation and human review needs](../../docs/BROADSIDE_M2E_TEST_RESULTS.md).
+
+## M2-F voyage and harbor
+
+Unpaid estimates cancel when navigating. Large pinned currency, prices and tier circles make upgrades readable. The expanded illustrated chart offers one automatic next encounter with enemy/reward advice; old active battles resume unchanged. See [M2-F tests and save behavior](../../docs/BROADSIDE_M2F_TEST_RESULTS.md).

@@ -8,5 +8,7 @@ func fit() -> void:
 	if not is_inside_tree(): return
 	var factor: Vector2 = get_viewport().get_final_transform().get_scale()
 	if DisplayServer.get_name() == "headless": factor = Vector2.ONE
-	scale = Vector2.ONE/factor
-	size = get_viewport_rect().size*factor
+	var pixels: Vector2 = get_viewport_rect().size*factor
+	var density: float = clampf(minf(pixels.x/1280.0,pixels.y/720.0),1.0,1.5)
+	scale = Vector2.ONE*density/factor
+	size = pixels/density

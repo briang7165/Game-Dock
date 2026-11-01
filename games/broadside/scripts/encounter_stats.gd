@@ -16,3 +16,7 @@ extends Resource
 @export var difficulty: int = 1
 @export var enemy_roles: Array[String] = ["raider"]
 @export var boss_name: String = ""
+
+@export var linear_progression: bool = false
+@export var stage: int = 0
+@export var relief: int = 0

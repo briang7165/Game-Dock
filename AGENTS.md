@@ -1,3 +1,7 @@
+## Broadside M2-F (October 31, 2026)
+
+Owner requests a simpler, larger, more readable shipyard and **one automatic next encounter**, not Trade Winds/Reef Passage/Blackwater difficulty choices. Read docs/BROADSIDE_M2F_VOYAGE_HARBOR_UX.md and Issue #14. M2-F1: fix purchase quote blocking tab navigation (Long-Range Cannons -> Fleet must work without paying), large pinned gold/salvage/repair, every upgrade card shows cost plus filled/empty tier pips and MAXED, larger responsive controls. M2-F2: full-height chart (not 180px ribbon), single next destination, progressively tougher encounters/rewards and safe old-save route compatibility. **Base a new dependent PR on feature/broadside-m2e-polish / PR #13, not main.** Preserve all saved fleet, names, gold, bosses, music, standalone Windows/Game Dock packaging. Review and test; do not auto-merge.
+
 # Game Dock repository — coding agent instructions
 
 This repository contains the **Tauri/Rust/React Game Dock launcher** and independent standalone games. Preserve launcher/game separation and require verifiable tests.

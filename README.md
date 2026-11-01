@@ -35,6 +35,8 @@ No additional account or subscription is needed to run the installed application
 
 - [Broadside M2-E shipyard and combat polish](docs/BROADSIDE_M2E_POLISH.md) — clear upgrade descriptions, fixed top repairs, wider menus, distinct boss moves and livelier original shanty music; [Issue #12](https://github.com/briang7165/Game-Dock/issues/12).
 
+- [Broadside M2-F layout and voyage](docs/BROADSIDE_M2F_VOYAGE_HARBOR_UX.md) — pinned readable money and repair, tier pips and prices, no stuck Fleet tabs, full-page single-path voyage. [Issue #14](https://github.com/briang7165/Game-Dock/issues/14).
+
 ## Releasing
 
 Run `BUILD_WINDOWS_INSTALLER.bat` on Windows or download the installer artifact from the GitHub Actions build once it has passed. The CI workflow builds a **launcher-only** NSIS installer; it does not publish a release or bundle Broadside. Game Dock does not currently download or install games.

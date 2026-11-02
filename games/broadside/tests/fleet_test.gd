@@ -43,7 +43,7 @@ func run() -> void:
 	check(Shipyard.confirm(save,offer) and save.data.gold == gold-150,"confirmation charges once")
 	check(not Shipyard.confirm(save,offer) and save.data.gold == gold-150,"repeated confirmation is rejected without charge")
 	check(not Shipyard.purchase(save,"upgrade","cannons","brig"),"brig cannon tier cap enforced")
-	check(Shipyard.purchase(save,"upgrade","cargo","sloop") and not Shipyard.purchase(save,"upgrade","lookout","sloop"),"sloop utility capacity enforced")
+	check(Shipyard.purchase(save,"upgrade","cargo","sloop") and Shipyard.purchase(save,"upgrade","lookout","sloop"),"sloop utility upgrades coexist without category slots")
 	check(Shipyard.rename_ship(save,"brig","The Brass Finch") and save.data.hull == "sloop" and save.data.fleet.brig.ship == "The Brass Finch","inactive ship can be named")
 	check(Shipyard.activate(save,"brig") and save.data.ship == "The Brass Finch" and save.data.health == 114 and Shipyard.guns_for(save.data).gun_count == 3,"switch restores brig name, hull and three guns")
 	check(Shipyard.purchase(save,"weapon","chain"),"owned ship buys and equips chain shot")

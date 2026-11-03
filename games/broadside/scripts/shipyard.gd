@@ -26,27 +26,14 @@ const CATEGORIES: Dictionary = {
 	"Firepower":["cannons","gunners"], "Sailing & Handling":["sails","rudder"],
 	"Defense & Repairs":["armor","prow","carpenter"], "Utility & Economy":["lookout","cargo"]}
 const LIMITS: Dictionary = {
-	"sloop":{"tiers":[1,3,3,3,2,2,2,2,2],"slots":[2,2,2,1]},
-	"brig":{"tiers":[1,3,3,3,2,2,3,3,3],"slots":[3,2,3,2]},
-	"frigate":{"tiers":[1,3,2,2,2,2,3,3,3],"slots":[3,2,3,2]},
-	"galleon":{"tiers":[2,3,2,2,2,2,3,3,3],"slots":[3,2,3,2]}}
+	"sloop":{"tiers":[1,3,3,3,2,2,2,2,2]},
+	"brig":{"tiers":[1,3,3,3,2,2,3,3,3]},
+	"frigate":{"tiers":[1,3,3,3,2,2,3,3,3]},
+	"galleon":{"tiers":[2,3,3,3,2,2,3,3,3]}}
 static func tier_limit(data: Dictionary, id: String) -> int:
-	return int(LIMITS[data.hull].tiers[UPGRADES.keys().find(id)])
-static func slots(data: Dictionary, category: String) -> int:
-	return int(LIMITS[data.hull].slots[CATEGORIES.keys().find(category)])
-static func used(data: Dictionary, category: String) -> int:
-	var count: int = 0
-	for id: String in CATEGORIES[category]:
-		if rank(data,id) > 0: count += 1
-	if category == "Firepower" and data.get("weapon","standard") != "standard": count += 1
-	return count
+	return int(LIMITS[data.hull].tiers[UPGRADES.keys().find(id)]) if UPGRADES.has(id) else 0
 static func capacity_text(data: Dictionary) -> String:
-	var count: int = 0
-	var capacity: int = 0
-	for category: String in CATEGORIES:
-		count += used(data,category)
-		capacity += slots(data,category)
-	return "%d / %d equipment slots" % [count,capacity]
+	return "%d / %d cannons per side" % [guns_for(data).gun_count,int(HULLS[data.hull].capacity)]
 
 static func rank(data: Dictionary, key: String) -> int:
 	return int(data.upgrades.get(key,0))
@@ -69,6 +56,7 @@ static func guns_for(data: Dictionary) -> CannonStats:
 	guns.gun_count = mini(int(HULLS[data.hull].guns)+rank(data,"cannons"),int(HULLS[data.hull].capacity))
 	guns.reload_seconds *= 1-0.08*rank(data,"gunners")
 	if data.get("crew","none") == "gunner": guns.reload_seconds *= 0.9
+	guns.weapon_style = data.get("weapon","standard")
 	match data.get("weapon","standard"):
 		"chain":
 			guns.damage = 10
@@ -93,29 +81,28 @@ static func price(data: Dictionary, kind: String, id: String) -> int:
 
 static func availability(data: Dictionary, kind: String, id: String, selected: String = "") -> String:
 	var vessel_id: String = data.hull if selected.is_empty() else selected
-	if data.active: return "Incompatible • finish the saved encounter"
+	if data.active: return "Finish your current battle before shopping. Open Voyage chart to resume."
 	if kind == "salvage": return "Available" if int(data.get("salvage",0)) > 0 else "No salvage to sell"
 	if not HULLS.has(vessel_id): return "Incompatible ship"
 	if kind == "hull":
 		if not HULLS.has(id): return "Incompatible hull"
-		if data.fleet.has(id): return "Installed • already owned"
+		if data.fleet.has(id): return "Already own this ship — select Make Active in Fleet."
 	else:
-		if not data.fleet.has(vessel_id): return "Incompatible • purchase this ship first"
+		if not data.fleet.has(vessel_id): return "Buy this ship in Fleet before fitting its upgrades."
 	var vessel: Dictionary = FleetState.view(data,vessel_id)
 	if kind == "upgrade":
 		if not UPGRADES.has(id): return "Incompatible upgrade"
-		if rank(vessel,id) >= tier_limit(vessel,id): return "Maximum level • installed"
-		for category: String in CATEGORIES:
-			if id in CATEGORIES[category] and rank(vessel,id) == 0 and used(vessel,category) >= slots(vessel,category): return "Incompatible • category slots full"
+		if tier_limit(vessel,id) == 0: return "This upgrade does not fit this ship."
+		if id == "cannons" and guns_for(vessel).gun_count >= int(HULLS[vessel.hull].capacity): return "Maximum reached: this ship has %d cannon ports per side." % int(HULLS[vessel.hull].capacity)
+		if rank(vessel,id) >= tier_limit(vessel,id): return "Already MAXED (%d/%d)." % [rank(vessel,id),tier_limit(vessel,id)]
 	elif kind == "weapon":
 		if not WEAPONS.has(id): return "Incompatible weapon"
-		if vessel.weapon == id: return "Installed"
-		if id != "standard" and vessel.weapon == "standard" and used(vessel,"Firepower") >= slots(vessel,"Firepower"): return "Incompatible • firepower slots full"
+		if vessel.weapon == id: return "Already equipped on this ship."
 	elif kind == "repair":
 		if price(vessel,kind,id) == 0: return "Installed • hull fully repaired"
 	elif kind != "hull": return "Incompatible transaction"
 	var cost: int = price(vessel,kind,id)
-	if int(data.gold) < cost: return "Unaffordable"
+	if int(data.gold) < cost: return "Costs %d gold. You have %d. Need %d more gold." % [cost,int(data.gold),cost-int(data.gold)]
 	return "Available"
 
 static func preview(data: Dictionary, kind: String, id: String, selected: String = "") -> Dictionary:
@@ -152,18 +139,22 @@ static func confirm(save: CampaignSave, offer: Dictionary) -> bool:
 		return false
 	var next: Dictionary = preview(save.data,offer.get("kind",""),offer.get("id",""),offer.get("selected",""))
 	if next.is_empty():
-		save.error = "Unavailable. Check ship ownership, gold, slots and tier limits."
+		save.error = availability(save.data,offer.get("kind",""),offer.get("id",""),offer.get("selected",""))
 		return false
 	return save.commit(next)
 static func purchase(save: CampaignSave, kind: String, id: String, selected: String = "") -> bool:
 	return confirm(save,quote(save.data,kind,id,selected))
 static func activate(save: CampaignSave, id: String) -> bool:
-	if save.data.active or not save.data.fleet.has(id): return false
+	if save.data.active or not save.data.fleet.has(id):
+		save.error = "Finish your current battle before changing ships." if save.data.active else "Buy this ship first."
+		return false
 	var next: Dictionary = save.data.duplicate(true)
 	FleetState.project(next,id)
 	return save.commit(next)
 static func rename_ship(save: CampaignSave, id: String, title: String) -> bool:
-	if save.data.active or not save.data.fleet.has(id): return false
+	if save.data.active or not save.data.fleet.has(id):
+		save.error = "Finish your current battle before changing ships." if save.data.active else "Buy this ship first."
+		return false
 	var next: Dictionary = save.data.duplicate(true)
 	next.fleet[id].ship = CampaignSave.clean_name(title,"The "+id.capitalize())
 	FleetState.project(next,save.data.hull)
@@ -176,4 +167,5 @@ static func apply(ship: BroadsideShip, data: Dictionary) -> void:
 	ship.ship_class = data.hull
 	ship.pennant = int(data.pennant)
 	ship.prow_rank = rank(data,"prow")
+	ship.visual_upgrades = data.upgrades.duplicate(true)
 	ship.resize_hull(HULLS[data.hull].size)

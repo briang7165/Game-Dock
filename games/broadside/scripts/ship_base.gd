@@ -1,6 +1,7 @@
 class_name BroadsideShip
 extends CharacterBody2D
 signal sunk(ship: BroadsideShip)
+signal reload_changed
 signal salvo(ship: BroadsideShip, side: float)
 @export var hull: HullStats = preload("res://data/sloop.tres")
 @export var guns: CannonStats = preload("res://data/cannons.tres")
@@ -8,6 +9,7 @@ signal salvo(ship: BroadsideShip, side: float)
 var pennant: int = 0
 var ship_class: String = "sloop"
 var hull_size := Vector2.ONE
+var visual_upgrades: Dictionary = {}
 var prow_rank: int = 0
 var rigging_slow: float = 0.0
 var health: float
@@ -53,6 +55,7 @@ func set_cannon_loadout(definition: CannonStats) -> bool:
 	starboard = CannonBattery.new(guns,1.0)
 	port.remaining = port_fraction*guns.reload_seconds
 	starboard.remaining = starboard_fraction*guns.reload_seconds
+	reload_changed.emit()
 	queue_redraw()
 	return true
 
@@ -66,6 +69,7 @@ func step(delta: float, throttle: float, steering: float) -> void:
 	var rigging_factor: float = 0.6 if rigging_slow > 0 else 1.0
 	port.tick(delta)
 	starboard.tick(delta)
+	reload_changed.emit()
 	hit_flash = maxf(0.0, hit_flash - delta)
 	var old_forward: Vector2 = Vector2.UP.rotated(rotation)
 	var effectiveness: float = lerpf(hull.stationary_steering, 1.0, clampf(absf(speed) / hull.top_speed, 0.0, 1.0))
@@ -84,7 +88,7 @@ func step(delta: float, throttle: float, steering: float) -> void:
 	drift -= forward * drift.dot(forward)
 	drift *= exp(-hull.lateral_drag * delta)
 	drift = drift.limit_length(hull.max_drift)
-	velocity = forward * speed + drift
+	velocity = forward * speed + drift + (SeaNavigation.current(position) if arena != null else Vector2.ZERO)
 	var before_slide: Vector2 = velocity
 	move_and_slide()
 	for i: int in range(get_slide_collision_count()):
@@ -116,6 +120,7 @@ func fire_loaded() -> int:
 			arena.add_child(projectile)
 			arena.effect(projectile.position, Color("ffcf78"), 12.0)
 			shots += 1
+	reload_changed.emit()
 	return shots
 
 func take_damage(amount: float) -> void:
@@ -141,6 +146,13 @@ func _draw() -> void:
 	draw_colored_polygon(inner, Color("96613d") if hit_flash <= 0 else Color("fff0bc"))
 	for y: int in range(-24, 32, 7):
 		draw_line(Vector2(-15,y), Vector2(15,y), Color("bd8753"), 2.0, true)
+	var armor: int = int(visual_upgrades.get("armor",0))
+	for side: float in [-1.0,1.0]:
+		for rank_index: int in range(armor):
+			var y: float = -19+rank_index*16
+			draw_line(Vector2(side*19*hull_size.x,y-7),Vector2(side*21*hull_size.x,y+7),Color("91a6a6"),5,true)
+	if int(visual_upgrades.get("rudder",0)) > 0:
+		draw_line(Vector2(0,35*hull_size.y),Vector2(0,(45+3*int(visual_upgrades.rudder))*hull_size.y),Color("b99d64"),6,true)
 	for battery: CannonBattery in [port, starboard]:
 		if battery == null:
 			continue
@@ -165,6 +177,14 @@ func _draw() -> void:
 	if prow_rank > 0:
 		draw_line(Vector2(-9,-39*hull_size.y),Vector2(0,-50*hull_size.y),Color("abb7b6"),4,true)
 		draw_line(Vector2(0,-50*hull_size.y),Vector2(9,-39*hull_size.y),Color("abb7b6"),4,true)
+	if int(visual_upgrades.get("sails",0)) > 0:
+		for i: int in range(int(visual_upgrades.sails)):
+			draw_line(Vector2(-20,-10+i*7),Vector2(20,-10+i*7),Color("c79d52"),2,true)
+	if int(visual_upgrades.get("lookout",0)) > 0:
+		draw_circle(Vector2(0,-27),6,Color("49382d"))
+		draw_arc(Vector2(0,-27),7,0,TAU,12,Color("d9b76d"),2,true)
+	if rigging_slow > 0:
+		draw_arc(Vector2.ZERO,48,0.2,TAU-0.2,24,Color("89dede"),2,true)
 	if health < hull.max_health * 0.5:
 		draw_line(Vector2(-12,23), Vector2(8,28), Color("332b27"),3.0,true)
 	if absf(speed) > 20:

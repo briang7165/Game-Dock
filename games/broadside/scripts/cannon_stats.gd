@@ -8,3 +8,5 @@ extends Resource
 @export var spread_degrees: float = 2.0
 
 @export var slow_seconds: float = 0.0
+
+@export var weapon_style: String = "standard"

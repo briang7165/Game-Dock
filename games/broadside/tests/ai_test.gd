@@ -57,6 +57,9 @@ func run() -> void:
 	check(salvos == old_salvos, "AI with rock-occluded target does not fire")
 	# Head directly into an island and allow steering/recovery to get clear.
 	enemy.position = Vector2(120,340)
+	enemy.waypoints.clear()
+	enemy.escaping_shore = false
+	enemy.route_clock = 0
 	enemy.rotation = 0
 	enemy.speed = 130
 	player.position = Vector2(120,-200)

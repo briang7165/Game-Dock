@@ -20,6 +20,13 @@ func run() -> void:
 		game.start_battle(VoyageDirector.encounter(data))
 		await frames(2)
 		var boss: BroadsideShip = game.arena.enemy
+		# This fixture checks the full special in clear water. M2-G separately
+		# stress-tests interrupting charges safely around every terrain layout.
+		for child: Node in game.arena.get_children():
+			if child is StaticBody2D:
+				child.collision_layer = 0
+		var clear_water: Array[Dictionary] = []
+		game.arena.navigation.build(clear_water)
 		var player: BroadsideShip = game.arena.player
 		boss.set_physics_process(false)
 		player.set_physics_process(false)

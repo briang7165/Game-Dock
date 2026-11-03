@@ -116,7 +116,7 @@ func fit_window() -> void:
 		for cat: String in category_buttons:
 			category_buttons[cat].text = {"Firepower":"Guns","Sailing & Handling":"Sailing","Defense & Repairs":"Hull","Utility & Economy":"Tools"}[cat] if size.y < 600 else cat
 		var view: Dictionary = FleetState.view(campaign.save.data,selected)
-		potential.text = "Up to %d more levels • %s" % [remaining_levels(view),Shipyard.capacity_text(view).replace("equipment slots","slots")] if size.y < 600 else "%s • up to %d more levels\n%s" % [selected.capitalize(),remaining_levels(view),Shipyard.capacity_text(view)]
+		potential.text = "Up to %d more levels • %s" % [remaining_levels(view),Shipyard.capacity_text(view)] if size.y < 600 else "%s • up to %d more levels\n%s" % [selected.capitalize(),remaining_levels(view),Shipyard.capacity_text(view)]
 	if is_instance_valid(stock_grid): stock_grid.columns = 2 if size.x >= 1100 else 1
 func build() -> void:
 	var background := ColorRect.new()
@@ -233,6 +233,7 @@ func refresh(_focus_ship: bool = false) -> void:
 	for key: String in upgrade_buttons:
 		if upgrade_buttons[key] == focused: focus_key = key
 	clear_stock()
+	category_grid.visible = page_name == "Upgrades"
 	update_header()
 	if page_name == "Fleet": build_fleet()
 	elif page_name == "Crew": build_crew()
@@ -256,7 +257,7 @@ func update_header() -> void:
 	health_bar.value = data.health
 	repair_button.text = "Hull Ready" if missing == 0 else "Repair Active Ship — %d Gold" % Shipyard.price(data,"repair","")
 	# Remains inspectable even when unaffordable, with a clear reason in checkout.
-	repair_button.disabled = missing == 0
+	repair_button.disabled = false
 func show_page(tab: String) -> void:
 	cancel_navigation()
 	page_name = tab
@@ -285,7 +286,8 @@ func build_upgrades() -> void:
 	stock_grid = GridContainer.new()
 	stock_grid.columns = 2
 	stock.add_child(stock_grid)
-	for id: String in Shipyard.CATEGORIES[category]: upgrade_card(stock_grid,"upgrade",id)
+	for id: String in Shipyard.CATEGORIES[category]:
+		if Shipyard.tier_limit(FleetState.view(campaign.save.data,selected),id) > 0: upgrade_card(stock_grid,"upgrade",id)
 	if category == "Firepower":
 		for id: String in Shipyard.WEAPONS: upgrade_card(stock_grid,"weapon",id)
 	if category == "Defense & Repairs": upgrade_card(stock_grid,"repair","")
@@ -324,6 +326,8 @@ func build_fleet() -> void:
 			cancel_navigation()
 			selected = id
 			show_ship.call_deferred(id))
+		fleet_buttons[id].mouse_entered.connect(describe.bind("hull",id,false,id))
+		fleet_buttons[id].focus_entered.connect(describe.bind("hull",id,false,id))
 	label(stock,"Selected ship: "+selected.capitalize(),17)
 	if campaign.save.data.fleet.has(selected):
 		rename_edit = LineEdit.new()
@@ -334,23 +338,25 @@ func build_fleet() -> void:
 			cancel_navigation()
 			Shipyard.rename_ship(campaign.save,selected,rename_edit.text)
 			refresh.call_deferred())
-		button(stock,"Make selected ship active",func() -> void:
-			cancel_navigation()
-			Shipyard.activate(campaign.save,selected)
-			refresh.call_deferred())
 		button(stock,"Repair selected owned ship",inspect.bind("repair",""))
 	else: button(stock,"Purchase selected hull",inspect.bind("hull",selected))
 func show_ship(id: String) -> void:
 	refresh()
+	if not campaign.save.data.fleet.has(id):
+		inspect("hull",id)
+		return
 	var state: Dictionary = FleetState.view(campaign.save.data,id)
 	var active: HullStats = Shipyard.hull_for(campaign.save.data)
 	var hull: HullStats = Shipyard.hull_for(state)
 	detail_title.text = state.ship+" / "+id.capitalize()
 	detail_text.text = Shipyard.HULLS[id].note
 	effect_text.text = "Active → selected: Hull %.0f → %.0f • Speed %.0f → %.0f • Turn %.2f → %.2f\nSelected condition %.0f / %.0f • %d guns per side\n%s" % [active.max_health,hull.max_health,active.top_speed,hull.top_speed,active.turn_rate,hull.turn_rate,state.health,hull.max_health,Shipyard.guns_for(state).gun_count,Shipyard.capacity_text(state)]
-	price_text.text = "Your ships keep their own upgrades and damage."
+	price_text.text = "Already active." if id == campaign.save.data.hull else "Already owned. Make Active is free; each ship keeps its own upgrades."
 	advanced_text.text = str(state.upgrades)
-	confirm_button.disabled = true
+	confirm_button.text = "Make Active"
+	offer = {"action":"activate","selected":id,"revision":campaign.save.data.revision}
+	confirm_button.disabled = campaign.save.data.active or id == campaign.save.data.hull
+	if campaign.save.data.active: price_text.text = "Finish your current battle before changing ships. Open Voyage chart to resume."
 func build_crew() -> void:
 	label(stock,"One captain-wide specialist follows you between ships. Unlock after 3 wins.")
 	for id: String in VoyageDirector.CREW:
@@ -370,6 +376,7 @@ func item_note(kind: String, id: String) -> String:
 	return "Fix damage before the next fight, or keep your gold and sail damaged. Your choice."
 func describe(kind: String, id: String, preparing: bool = false, vessel: String = "") -> void:
 	if not offer.is_empty() and not preparing: return
+	confirm_button.text = "Confirm purchase"
 	current_kind = kind
 	current_id = id
 	current_ship = selected if vessel.is_empty() else vessel
@@ -390,7 +397,8 @@ func describe(kind: String, id: String, preparing: bool = false, vessel: String 
 	elif kind == "salvage": impact = "%d salvage → 0 • Receive %d gold" % [state.get("salvage",0),-cost]
 	else: impact = "Adds one new ship; does not replace your active ship."
 	effect_text.text = "%s • %s\n%s" % [state.ship,availability,impact]
-	price_text.text = "%d gold • 0 salvage • %d gold left%s" % [cost,maxi(0,int(state.gold)-cost),"\nReady to buy? Confirm below." if preparing else "\nSelect the fitting to prepare an estimate."]
+	price_text.text = "%d gold • 0 salvage • %d gold left%s" % [cost,maxi(0,int(state.gold)-cost),("\nReady to buy? Confirm below." if preparing else "\nSelect to prepare an estimate.") if availability == "Available" else "\n"+availability]
+	if availability != "Available": price_text.text = availability
 	if kind == "upgrade" and Shipyard.rank(state,id) >= Shipyard.tier_limit(state,id): price_text.text = "MAXED • All levels purchased"
 	if kind == "salvage": price_text.text = "Receive %d gold • Confirm to sell" % -cost
 	var previous: String = selected
@@ -403,7 +411,8 @@ func inspect(kind: String, id: String, target: String = "") -> void:
 	var vessel: String = campaign.save.data.hull if target == "active" else selected
 	offer = Shipyard.quote(campaign.save.data,kind,id,vessel)
 	describe(kind,id,true,vessel)
-	status.text = "Estimate ready. Confirm spends gold; Cancel or Escape keeps your money."
+	var reason: String = Shipyard.availability(campaign.save.data,kind,id,vessel)
+	status.text = "Estimate ready. Confirm spends gold; Cancel or Escape keeps your money." if reason == "Available" else reason
 	# No tooltip, overlay, reparenting, automatic focus change or scroll jump.
 func cancel() -> void:
 	offer.clear()
@@ -414,10 +423,18 @@ func confirm_offer() -> void:
 	var pending: Dictionary = offer.duplicate(true)
 	offer.clear()
 	confirm_button.disabled = true
+	if pending.get("action","") == "activate":
+		if pending.revision != campaign.save.data.revision:
+			status.text = "Your save changed. Select the ship again; nothing was charged."
+			return
+		var activated: bool = Shipyard.activate(campaign.save,pending.selected)
+		refresh()
+		status.text = "Active ship: "+campaign.save.data.ship if activated else campaign.save.error
+		return
 	var success: bool = Shipyard.confirm(campaign.save,pending)
 	refresh()
 	describe(pending.kind,pending.id,false,pending.selected)
-	status.text = "Done. Your ship is ready." if success else campaign.save.error
+	status.text = "Purchase complete: "+item_name(pending.kind,pending.id)+"." if success else campaign.save.error
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and not event.is_echo() and not offer.is_empty():
 		cancel()
@@ -457,17 +474,9 @@ func leave(action: Callable) -> void:
 	cancel_navigation()
 	action.call_deferred()
 static func remaining_levels(state: Dictionary) -> int:
-	# Maximum purchasable tier steps within the remaining category slots (ignoring gold).
 	var count: int = 0
-	for group: String in Shipyard.CATEGORIES:
-		var choices: Array[int] = []
-		for id: String in Shipyard.CATEGORIES[group]:
-			var remaining: int = maxi(0,Shipyard.tier_limit(state,id)-Shipyard.rank(state,id))
-			if Shipyard.rank(state,id) > 0: count += remaining
-			else: choices.append(remaining)
-		choices.sort()
-		choices.reverse()
-		for i: int in range(mini(choices.size(),maxi(0,Shipyard.slots(state,group)-Shipyard.used(state,group)))): count += choices[i]
+	for id: String in Shipyard.UPGRADES:
+		count += maxi(0,Shipyard.tier_limit(state,id)-Shipyard.rank(state,id))
 	return count
 func card_text(state: Dictionary, kind: String, id: String) -> String:
 	var cost: int = Shipyard.price(state,kind,id)
@@ -482,6 +491,5 @@ func card_text(state: Dictionary, kind: String, id: String) -> String:
 	elif kind == "weapon":
 		progress = "Equipped" if state.weapon == id else ("Owned" if state.owned_weapons.has(id) else "Not owned")
 		if state.owned_weapons.has(id): price = "Equipped" if state.weapon == id else "Equip Free"
-	if availability == "Unaffordable": price += " • Not enough gold"
-	elif "slots full" in availability: price += " • Slots full"
+	if "Need " in availability: price += " • Need %d more" % maxi(0,cost-int(campaign.save.data.gold))
 	return "%s • %s\n%s\n%s" % [item_name(kind,id),price,progress,item_note(kind,id)]

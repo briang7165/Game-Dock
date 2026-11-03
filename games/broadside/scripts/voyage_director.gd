@@ -58,7 +58,8 @@ static func linear_encounter(data: Dictionary) -> EncounterStats:
 	result.stage = (chapter-1)*5+stop
 	result.relief = mini(int(data.get("setbacks",0)),3)
 	result.theme = posmod(int(data.chapter)-1,THEMES.size())
-	result.layout = posmod(int(data.seed)+int(data.chapter)*7+stop*13,3)
+	result.layout = posmod(int(data.seed)+int(data.chapter)*7+stop*13,5)
+	result.weather = ["calm","windy","misty","rainy","stormy"][posmod(stop+int(data.chapter)-1,5)]
 	result.route = 1 if stop == 2 and chapter > 1 else 0 # geography only; no player difficulty choice
 	result.location_name = preload("res://scripts/voyage_chart.gd").NAMES[stop]
 	if int(data.chapter) > 1: result.location_name = ["Emerald","Ember","Fogbound","Thunder"][result.theme]+" "+["Strait","Reef","Shoals","Reach","Crown"][stop]
@@ -94,7 +95,9 @@ static func islands(encounter_data: EncounterStats) -> Array[Vector2]:
 	var layouts: Array = [
 		[Vector2(-420,-230),Vector2(120,210),Vector2(570,-280)],
 		[Vector2(-650,-320),Vector2(-80,-310),Vector2(150,310),Vector2(680,260)],
-		[Vector2(-610,290),Vector2(-120,-320),Vector2(170,320),Vector2(650,-340)]]
+		[Vector2(-610,290),Vector2(-120,-320),Vector2(170,320),Vector2(650,-340)],
+		[Vector2(-700,40),Vector2(-300,-360),Vector2(80,330),Vector2(600,-400)],
+		[Vector2(-620,-330),Vector2(-420,340),Vector2(100,-350),Vector2(720,320)]]
 	var result: Array[Vector2] = []
 	result.assign(layouts[encounter_data.layout])
 	if encounter_data.route == 1:

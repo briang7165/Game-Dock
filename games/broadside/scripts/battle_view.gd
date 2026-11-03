@@ -7,6 +7,7 @@ var world: SubViewport
 var hud: Control
 var indicators: Control
 var chrome: Control
+var enemy_health: Control
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -31,6 +32,9 @@ func _ready() -> void:
 	indicators = preload("res://scripts/enemy_indicators.gd").new()
 	indicators.arena = arena
 	battlefield.add_child(indicators)
+	enemy_health = preload("res://scripts/enemy_health.gd").new()
+	enemy_health.arena = arena
+	battlefield.add_child(enemy_health)
 	chrome = preload("res://scripts/location_title.gd").new()
 	chrome.arena = arena
 	battlefield.add_child(chrome)

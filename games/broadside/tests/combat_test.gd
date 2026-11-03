@@ -162,7 +162,9 @@ func run() -> void:
 	await frames(45)
 	check(enemy.health < enemy.hull.max_health, "real projectile collision damages enemy")
 	check(player.health == hp, "shots exclude their source hull")
-	await frames(100)
+	# With soft sea edges, a missed shot expires by its real lifetime rather than
+	# hitting the former invisible wall. Wait beyond the configured TTL.
+	await frames(ceili(player.guns.projectile_lifetime*60)+2)
 	check(get_nodes_in_group("projectiles").is_empty(), "missed shots expire")
 	# Island at (120,210) lies directly between these hulls.
 	player.position = Vector2(-80,210)

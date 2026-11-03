@@ -20,4 +20,24 @@ func _draw() -> void:
 			var tint := Color(0.16,0.46,0.50,0.20 + 0.10 * sin(row + col))
 			draw_line(Vector2(x,y),Vector2(x+48,y-3),tint,9.0,true)
 			draw_line(Vector2(x+9,y-5),Vector2(x+32,y-7),Color(0.52,0.76,0.73,0.18),1.5,true)
-	draw_rect(Rect2(-1160,-860,2320,1720),Color("c2ad77"),false,4.0)
+	# Broken foam lanes and inward chevrons signal the broad current zone.
+	for side: float in [-1.0,1.0]:
+		for y: int in range(-720,721,120):
+			var at := Vector2(side*1050,y)
+			draw_polyline(PackedVector2Array([at+Vector2(side*16,-10),at,at+Vector2(side*16,10)]),Color(0.6,0.8,0.78,0.4),3,true)
+		for x: int in range(-960,961,120):
+			var at := Vector2(x,side*750)
+			draw_polyline(PackedVector2Array([at+Vector2(-10,side*16),at,at+Vector2(10,side*16)]),Color(0.6,0.8,0.78,0.4),3,true)
+	var weather: String = get_parent().encounter.weather
+	if weather in ["rainy","stormy"]:
+		for i: int in range(120 if weather == "stormy" else 65):
+			var point := visible.position+Vector2(fposmod(i*137.3-time*80,visible.size.x),fposmod(i*97.7+time*380,visible.size.y))
+			draw_line(point,point+Vector2(-6,18),Color(0.72,0.84,0.87,0.28),1.5,true)
+	if weather in ["misty","stormy"]:
+		for i: int in range(7):
+			var y: float = visible.position.y+fposmod(i*167.0+time*8,visible.size.y)
+			draw_line(Vector2(visible.position.x,y),Vector2(visible.end.x,y+45),Color(0.66,0.8,0.82,0.055),65,true)
+	if weather in ["windy","stormy"]:
+		for i: int in range(25):
+			var at := visible.position+Vector2(fposmod(i*191.0+time*35,visible.size.x),fposmod(i*113.0,visible.size.y))
+			draw_arc(at,28,0.3,2.4,8,Color(0.65,0.83,0.81,0.3),2,true)

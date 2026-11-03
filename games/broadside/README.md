@@ -78,3 +78,9 @@ Repairs remain above the harbor inventory and require confirmation. Upgrade deta
 ## M2-F voyage and harbor
 
 Unpaid estimates cancel when navigating. Large pinned currency, prices and tier circles make upgrades readable. The expanded illustrated chart offers one automatic next encounter with enemy/reward advice; old active battles resume unchanged. See [M2-F tests and save behavior](../../docs/BROADSIDE_M2F_TEST_RESULTS.md).
+
+## M2-G: purchase clarity, navigation and visual QC
+
+M2-G (0.2.6-m2g) removes category slots while retaining hull-specific ranks and gunports. Fleet cards lead directly to a pinned purchase/activation panel with exact validation reasons. New visibility-graph navigation and marked soft currents replace rock/edge trapping; enemy HP bars and exact reload meters improve combat information. Ship fittings, linked chain shot, varied island shapes and five cosmetic weather conditions use original procedural art. Existing saves, controls, shanty music and the three-file Windows/Game Dock package remain intact.
+
+See [M2-G validation](../../docs/BROADSIDE_M2G_TEST_RESULTS.md) for reproducible tests and remaining human checks. The broadside-windows-x64 artifact contains the standalone versioned ZIP; no Godot installation is required to play.

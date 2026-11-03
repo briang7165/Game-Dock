@@ -33,6 +33,7 @@ func label(text: String, font_size: int, color: Color = Color("e8dbb5")) -> Labe
 
 func meter(column: VBoxContainer, color: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
+	bar.step = 0.0 # Do not round 99.6% to a full meter before the battery is ready.
 	bar.custom_minimum_size.y = 17
 	bar.show_percentage = false
 	bar.add_theme_stylebox_override("background",box(Color("06151e"),Color("3c5157")))
@@ -87,6 +88,7 @@ func _ready() -> void:
 	combat_status = label("",14,Color("f0d79d"))
 	stack.add_child(combat_status)
 	ignore_input(self)
+	arena.player.reload_changed.connect(sync_batteries)
 	_process(0.0)
 
 func ignore_input(node: Node) -> void:
@@ -99,9 +101,13 @@ func ignore_input(node: Node) -> void:
 func battery_state(battery: CannonBattery, bar: ProgressBar, text: Label) -> void:
 	var progress: float = clampf(1.0-battery.remaining/maxf(battery.stats.reload_seconds,0.001),0.0,1.0)
 	bar.value = progress*100
-	text.text = "READY" if battery.ready() else "%.1f s  •  %d%%" % [battery.remaining,roundi(progress*100)]
+	text.text = "READY" if battery.ready() else "%.1f s  •  %d%%" % [ceilf(battery.remaining*10)/10.0,mini(99,floori(progress*100))]
 	var fill: StyleBoxFlat = bar.get_theme_stylebox("fill")
 	fill.bg_color = Color("54bcae") if battery.ready() else Color("c4a568")
+
+func sync_batteries() -> void:
+	battery_state(arena.player.port,port_bar,port_state)
+	battery_state(arena.player.starboard,starboard_bar,starboard_state)
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(arena):
@@ -124,7 +130,7 @@ func _process(delta: float) -> void:
 	battery_state(arena.player.port,port_bar,port_state)
 	battery_state(arena.player.starboard,starboard_bar,starboard_state)
 
-	combat_status.text = "WASD / ARROWS Sail • SPACE Fire • ESC Pause"
+	combat_status.text = "WASD / ARROWS Sail • SPACE Press to fire when ready • ESC Pause"
 	if arena.player.rigging_slow > 0:
 		combat_status.text = "RIGGING HIT! Slower sailing / turning for %.1fs" % arena.player.rigging_slow
 	else:

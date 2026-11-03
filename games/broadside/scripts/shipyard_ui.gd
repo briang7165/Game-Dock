@@ -233,6 +233,7 @@ func refresh(_focus_ship: bool = false) -> void:
 	for key: String in upgrade_buttons:
 		if upgrade_buttons[key] == focused: focus_key = key
 	clear_stock()
+	category_grid.visible = page_name == "Upgrades"
 	update_header()
 	if page_name == "Fleet": build_fleet()
 	elif page_name == "Crew": build_crew()
@@ -337,11 +338,6 @@ func build_fleet() -> void:
 			cancel_navigation()
 			Shipyard.rename_ship(campaign.save,selected,rename_edit.text)
 			refresh.call_deferred())
-		button(stock,"Make selected ship active",func() -> void:
-			cancel_navigation()
-			var success: bool = Shipyard.activate(campaign.save,selected)
-			status.text = "Active ship: "+campaign.save.data.ship if success else campaign.save.error
-			refresh.call_deferred())
 		button(stock,"Repair selected owned ship",inspect.bind("repair",""))
 	else: button(stock,"Purchase selected hull",inspect.bind("hull",selected))
 func show_ship(id: String) -> void:
@@ -355,9 +351,12 @@ func show_ship(id: String) -> void:
 	detail_title.text = state.ship+" / "+id.capitalize()
 	detail_text.text = Shipyard.HULLS[id].note
 	effect_text.text = "Active → selected: Hull %.0f → %.0f • Speed %.0f → %.0f • Turn %.2f → %.2f\nSelected condition %.0f / %.0f • %d guns per side\n%s" % [active.max_health,hull.max_health,active.top_speed,hull.top_speed,active.turn_rate,hull.turn_rate,state.health,hull.max_health,Shipyard.guns_for(state).gun_count,Shipyard.capacity_text(state)]
-	price_text.text = "Already owned. Choose Make selected ship active below the fleet list."
+	price_text.text = "Already active." if id == campaign.save.data.hull else "Already owned. Make Active is free; each ship keeps its own upgrades."
 	advanced_text.text = str(state.upgrades)
-	confirm_button.disabled = true
+	confirm_button.text = "Make Active"
+	offer = {"action":"activate","selected":id,"revision":campaign.save.data.revision}
+	confirm_button.disabled = campaign.save.data.active or id == campaign.save.data.hull
+	if campaign.save.data.active: price_text.text = "Finish your current battle before changing ships. Open Voyage chart to resume."
 func build_crew() -> void:
 	label(stock,"One captain-wide specialist follows you between ships. Unlock after 3 wins.")
 	for id: String in VoyageDirector.CREW:
@@ -377,6 +376,7 @@ func item_note(kind: String, id: String) -> String:
 	return "Fix damage before the next fight, or keep your gold and sail damaged. Your choice."
 func describe(kind: String, id: String, preparing: bool = false, vessel: String = "") -> void:
 	if not offer.is_empty() and not preparing: return
+	confirm_button.text = "Confirm purchase"
 	current_kind = kind
 	current_id = id
 	current_ship = selected if vessel.is_empty() else vessel
@@ -398,6 +398,7 @@ func describe(kind: String, id: String, preparing: bool = false, vessel: String 
 	else: impact = "Adds one new ship; does not replace your active ship."
 	effect_text.text = "%s • %s\n%s" % [state.ship,availability,impact]
 	price_text.text = "%d gold • 0 salvage • %d gold left%s" % [cost,maxi(0,int(state.gold)-cost),("\nReady to buy? Confirm below." if preparing else "\nSelect to prepare an estimate.") if availability == "Available" else "\n"+availability]
+	if availability != "Available": price_text.text = availability
 	if kind == "upgrade" and Shipyard.rank(state,id) >= Shipyard.tier_limit(state,id): price_text.text = "MAXED • All levels purchased"
 	if kind == "salvage": price_text.text = "Receive %d gold • Confirm to sell" % -cost
 	var previous: String = selected
@@ -422,6 +423,14 @@ func confirm_offer() -> void:
 	var pending: Dictionary = offer.duplicate(true)
 	offer.clear()
 	confirm_button.disabled = true
+	if pending.get("action","") == "activate":
+		if pending.revision != campaign.save.data.revision:
+			status.text = "Your save changed. Select the ship again; nothing was charged."
+			return
+		var activated: bool = Shipyard.activate(campaign.save,pending.selected)
+		refresh()
+		status.text = "Active ship: "+campaign.save.data.ship if activated else campaign.save.error
+		return
 	var success: bool = Shipyard.confirm(campaign.save,pending)
 	refresh()
 	describe(pending.kind,pending.id,false,pending.selected)

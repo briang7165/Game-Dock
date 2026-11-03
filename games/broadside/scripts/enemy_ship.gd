@@ -9,6 +9,13 @@ var warning: float = 0.0
 var stuck_time: float = 0.0
 var recovery: float = 0.0
 var last_position: Vector2
+var progress_clock: float = 0.0
+var route_clock: float = 0.0
+var waypoints := PackedVector2Array()
+var avoidance_side: float = 1.0
+var escaping_shore: bool = false
+var shore_target: Vector2
+var returning_from_edge: bool = false
 
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target) or target.dead or dead:
@@ -23,8 +30,7 @@ func _physics_process(delta: float) -> void:
 		var b: float = a + PI
 		desired = a if absf(angle_difference(rotation, a)) < absf(angle_difference(rotation, b)) else b
 	var heading: Vector2 = Vector2.UP.rotated(rotation)
-	var ahead: Dictionary = ray(position, position + heading * tactics.obstacle_lookahead, 1)
-	var throttle: float = tactics.ai_throttle if distance > tactics.ai_range else 0.45
+	var throttle: float = tactics.ai_throttle if distance > tactics.ai_range else 0.18
 	if arena.encounter.campaign:
 		var movement: Vector2 = tactical_motion(offset,distance)
 		desired = movement.x
@@ -36,25 +42,9 @@ func _physics_process(delta: float) -> void:
 				throttle = 0.0
 			elif ability.phase == "rest": throttle = 0.1
 	var steering: float = clampf(angle_difference(rotation, desired) * 2.4, -1, 1)
-	if not ahead.is_empty():
-		if ability != null and ability.phase == "charge": ability.finish()
-		# Pick the clearest side; normal points away from the obstacle.
-		var normal: Vector2 = ahead.normal
-		var avoidance: Vector2 = (normal + heading.rotated(PI / 2.0) * 0.7).normalized()
-		steering = clampf(angle_difference(rotation, avoidance.angle() + PI / 2.0) * 3.0, -1, 1)
-		throttle = 0.35
-	if position.distance_to(last_position) < 0.2 and throttle > 0.0:
-		stuck_time += delta
-	else:
-		stuck_time = 0.0
-	last_position = position
-	if stuck_time > 1.2:
-		recovery = 2.5
-		stuck_time = 0.0
-	if recovery > 0.0:
-		recovery -= delta
-		throttle = -1.0
-		steering = 1.0
+	var motion: Vector2 = navigate(delta,desired,throttle)
+	steering = motion.x
+	throttle = motion.y
 	var side: float = signf(Vector2.RIGHT.rotated(rotation).dot(offset))
 	var battery: CannonBattery = starboard if side > 0 else port
 	var aligned: bool = absf(heading.dot(offset.normalized())) < tactics.ai_fire_angle
@@ -78,6 +68,83 @@ func _physics_process(delta: float) -> void:
 		warning = 0.0
 	telegraph = warning / tactics.ai_telegraph
 	step(delta, throttle, steering)
+
+func navigate(delta: float, desired: float, throttle: float) -> Vector2:
+	route_clock -= delta
+	progress_clock += delta
+	var nav: SeaNavigation = arena.navigation
+	if absf(position.x) > 980 or absf(position.y) > 680:
+		if not returning_from_edge: waypoints.clear()
+		returning_from_edge = true
+	elif absf(position.x) < 850 and absf(position.y) < 550:
+		returning_from_edge = false
+	var edge: bool = returning_from_edge
+	var heading: Vector2 = Vector2.UP.rotated(rotation)
+	var look: float = maxf(170,absf(speed)*2.1)
+	# A hull already close to shore must first move OUT of the clearance envelope.
+	# Reversing merely because a lookahead starts inside it can back into the rock.
+	if not escaping_shore and not nav.point_clear(position):
+		escaping_shore = true
+		var safe: Vector2 = nav.safe_point(position)
+		shore_target = nav.safe_point(safe+(safe-position).normalized()*110)
+		waypoints.clear()
+	if escaping_shore and nav.clear(position,position,SeaNavigation.CLEARANCE+65):
+		escaping_shore = false
+	if escaping_shore:
+		var outward: Vector2 = (shore_target-position).normalized()
+		if ability != null and ability.phase == "charge": ability.finish()
+		var backing: bool = heading.dot(outward) < 0
+		var escape_heading: float = outward.angle()+PI/2
+		return Vector2(clampf(angle_difference(rotation,escape_heading)*2.4,-1,1),-1.0 if backing else 0.5)
+	var blocked: bool = not nav.clear(position,position+heading*look,48)
+	# Check the center plus both hull shoulders, using actual physics as well.
+	for shoulder: float in [-34.0,0.0,34.0]:
+		var start: Vector2 = position+Vector2.RIGHT.rotated(rotation)*shoulder
+		blocked = blocked or not ray(start,start+heading*look,1).is_empty()
+	if edge or blocked:
+		if ability != null and ability.phase == "charge": ability.finish()
+	elif ability != null and ability.phase == "charge":
+		waypoints.clear()
+		return Vector2(clampf(angle_difference(rotation,desired)*2.4,-1,1),throttle)
+	# Resume the role's broadside tactics as soon as a clear firing lane is found.
+	# Chasing the last route endpoint all the way to the target prevents alignment.
+	if not edge and nav.clear(position,target.position) and position.distance_to(target.position) < tactics.ai_range*1.35:
+		waypoints.clear()
+		if not blocked: return Vector2(clampf(angle_difference(rotation,desired)*2.4,-1,1),throttle)
+	if route_clock <= 0 and waypoints.is_empty() and (edge or blocked or not nav.clear(position,target.position)):
+		waypoints = nav.route(position,Vector2.ZERO if edge else target.position)
+		route_clock = 1.5
+	while not waypoints.is_empty() and position.distance_to(waypoints[0]) < 80:
+		if waypoints.size() > 1 and not nav.clear(position,waypoints[1],55): break
+		waypoints.remove_at(0)
+	if not waypoints.is_empty():
+		desired = (waypoints[0]-position).angle()+PI/2
+		var turn_error: float = absf(angle_difference(rotation,desired))
+		# Keep turning toward the route while backing clear; never accelerate into
+		# a tight corner before the bow points down the next leg.
+		throttle = 0.85 if turn_error < 0.45 else (-1.0 if turn_error > 1.2 or blocked else 0.25)
+	elif blocked:
+		var best: float = -INF
+		for angle: float in [-1.3,-0.7,0.7,1.3,PI]:
+			var direction: Vector2 = heading.rotated(angle)
+			var score: float = (2.0 if nav.clear(position,position+direction*220,48) else 0.0)-absf(angle)*0.1
+			if signf(angle) == avoidance_side: score += 0.2
+			if score > best:
+				best = score
+				desired = rotation+angle
+				avoidance_side = signf(angle)
+		throttle = 0.2
+	if progress_clock >= 1.5:
+		if position.distance_to(last_position) < 8 and get_slide_collision_count() > 0:
+			recovery = 1.8
+			waypoints = nav.route(position,nav.safe_point(position-heading*220+heading.orthogonal()*avoidance_side*180))
+			avoidance_side *= -1
+		last_position = position
+		progress_clock = 0
+	if recovery > 0:
+		recovery -= delta
+		return Vector2(avoidance_side,-1.0)
+	return Vector2(clampf(angle_difference(rotation,desired)*2.4,-1,1),throttle)
 
 func ray(from: Vector2, to: Vector2, mask: int) -> Dictionary:
 	return get_world_2d().direct_space_state.intersect_ray(PhysicsRayQueryParameters2D.create(from, to, mask, [get_rid()]))

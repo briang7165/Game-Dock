@@ -65,11 +65,10 @@ func run() -> void:
 		var gold: int = save.data.gold
 		harbor.confirm_offer()
 		check(save.data.gold == gold and "Purchase complete" in harbor.status.text,"repeat Confirm cannot charge and success is visible")
-		var active_button: Button
-		for node: Node in harbor.find_children("*","Button",true,false):
-			if node.text == "Make selected ship active": active_button = node
-		check(active_button != null,"owned hull exposes Make Active")
-		if active_button != null: await click(active_button)
+		harbor.show_ship(sample[0])
+		await frames()
+		check(harbor.confirm_button.text == "Make Active" and not harbor.confirm_button.disabled,"owned hull exposes pinned Make Active")
+		await click(harbor.confirm_button)
 		check(save.data.hull == sample[0] and save.data.fleet.sloop.upgrades.sails == 2,"real Make Active click preserves other ship")
 		var reopened := CampaignSave.new()
 		reopened.path = save.path

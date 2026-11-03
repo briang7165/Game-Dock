@@ -37,6 +37,14 @@ func run() -> void:
 		await process_frame
 		harbor.inspect("weapon","carronade")
 	if mode == "repair": harbor.inspect("repair","","active")
+	if mode in ["purchase","blocked"]:
+		if mode == "blocked":
+			data = save.data.duplicate(true)
+			data.gold = 488
+			save.commit(data)
+		harbor.selected = "frigate"
+		harbor.show_page("Fleet")
+		harbor.show_ship("frigate")
 	if mode in ["chart","chart-progress","travel"]:
 		if mode != "chart":
 			data = save.data.duplicate(true)
@@ -60,19 +68,34 @@ func run() -> void:
 		boss.ability.tick(boss,0.01,true,true)
 		boss.queue_redraw()
 	await create_timer(0.5).timeout
-	if mode in ["upgrade","repair","compare","fleet"]:
+	if mode in ["upgrade","repair","compare","fleet","purchase","blocked"]:
 		var fixed: Rect2 = harbor.repair_bar.get_global_rect()
 		var stock_rect: Rect2 = harbor.scroll.get_global_rect()
 		var actions: Rect2 = harbor.confirm_button.get_global_rect()
 		var footer: Rect2 = harbor.price_text.get_global_rect()
-		assert(fixed.end.y < stock_rect.position.y,"repairs stay above inventory")
-		assert(not footer.intersects(actions),"price and confirmation do not overlap")
-		assert(harbor.get_global_rect().encloses(actions),"confirmation fits window")
+		if not (fixed.end.y < stock_rect.position.y):
+			push_error("repairs stay above inventory")
+			quit(1)
+			return
+		if not (not footer.intersects(actions)):
+			push_error("price and confirmation do not overlap")
+			quit(1)
+			return
+		if not (harbor.get_global_rect().encloses(actions)):
+			push_error("confirmation fits window")
+			quit(1)
+			return
 		print("PASS: pinned repairs and unclipped checkout at ",root.size)
 	if mode in ["chart","chart-progress","travel"]:
 		var screen: Control = game.panel
-		assert(screen.get_global_rect().encloses(screen.sail_button.get_global_rect()),"Set Sail remains inside screen")
-		assert(game.campaign.chart.size.y/screen.size.y > (0.65 if screen.size.y >= 720 else 0.4),"map dominates large screen and reflows on small screens")
+		if not (screen.get_global_rect().encloses(screen.sail_button.get_global_rect())):
+			push_error("Set Sail remains inside screen")
+			quit(1)
+			return
+		if not (game.campaign.chart.size.y/screen.size.y > (0.65 if screen.size.y >= 720 else 0.4)):
+			push_error("map dominates large screen and reflows on small screens")
+			quit(1)
+			return
 		print("PASS: map height share ",game.campaign.chart.size.y/screen.size.y)
 	await RenderingServer.frame_post_draw
 	if args.size() > 0:

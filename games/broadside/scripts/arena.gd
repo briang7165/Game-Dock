@@ -6,26 +6,23 @@ var enemies: Array[BroadsideShip] = []
 var finished: bool = false
 var camera: Camera2D
 var audio: Node
+var navigation := SeaNavigation.new()
 var impacts: RefCounted = preload("res://scripts/impact_tracker.gd").new()
 @export var encounter: EncounterStats = preload("res://data/encounter.tres")
 
 func _ready() -> void:
 	process_physics_priority = -100
-	for location: Vector2 in VoyageDirector.islands(encounter) if encounter.campaign else [Vector2(-420,-230),Vector2(120,210),Vector2(570,-280)]:
+	var rocks: Array[Dictionary] = []
+	var locations: Array = VoyageDirector.islands(encounter) if encounter.campaign else [Vector2(-420,-230),Vector2(120,210),Vector2(570,-280)]
+	for index: int in range(locations.size()):
 		var island: StaticBody2D = preload("res://scenes/Island.tscn").instantiate()
-		island.position = location
-		if encounter.campaign: island.theme = encounter.theme
+		island.position = locations[index]
+		island.theme = encounter.theme
+		island.variant = posmod(index+encounter.layout*2,5)
+		island.radius = [64.0,86.0,72.0,95.0,58.0][island.variant]
 		add_child(island)
-	for bounds: Rect2 in [Rect2(-1220,-920,2440,60),Rect2(-1220,860,2440,60),Rect2(-1220,-860,60,1720),Rect2(1160,-860,60,1720)]:
-		var body := StaticBody2D.new()
-		body.collision_layer = 1
-		body.position = bounds.get_center()
-		var shape := CollisionShape2D.new()
-		var rectangle := RectangleShape2D.new()
-		rectangle.size = bounds.size
-		shape.shape = rectangle
-		body.add_child(shape)
-		add_child(body)
+		rocks.append({"center":island.position,"radius":island.envelope})
+	navigation.build(rocks)
 	player = preload("res://scenes/PlayerShip.tscn").instantiate()
 	player.position = Vector2(-290,30)
 	player.arena = self

@@ -1,6 +1,8 @@
 extends StaticBody2D
 @export var radius: float = 80.0
 var theme: int = 0
+var variant: int = 0
+var envelope: float = 0.0
 var rim: PackedVector2Array
 
 func _ready() -> void:
@@ -8,7 +10,10 @@ func _ready() -> void:
 	collision_mask = 2
 	for i: int in range(12):
 		var angle: float = i * TAU / 12.0
-		rim.append(Vector2.from_angle(angle) * radius * (0.9 + 0.1 * sin(i * 7.0)))
+		var stretch := Vector2(1.2,0.72) if variant % 2 == 1 else Vector2(0.85,1.1)
+		var point: Vector2 = Vector2.from_angle(angle) * radius * (0.84 + 0.15 * sin(i * 7.0+variant)) * stretch
+		rim.append(point)
+		envelope = maxf(envelope,point.length())
 	var collision := CollisionPolygon2D.new()
 	collision.polygon = rim
 	add_child(collision)

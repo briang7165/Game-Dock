@@ -56,6 +56,7 @@ static func guns_for(data: Dictionary) -> CannonStats:
 	guns.gun_count = mini(int(HULLS[data.hull].guns)+rank(data,"cannons"),int(HULLS[data.hull].capacity))
 	guns.reload_seconds *= 1-0.08*rank(data,"gunners")
 	if data.get("crew","none") == "gunner": guns.reload_seconds *= 0.9
+	guns.weapon_style = data.get("weapon","standard")
 	match data.get("weapon","standard"):
 		"chain":
 			guns.damage = 10
@@ -166,4 +167,5 @@ static func apply(ship: BroadsideShip, data: Dictionary) -> void:
 	ship.ship_class = data.hull
 	ship.pennant = int(data.pennant)
 	ship.prow_rank = rank(data,"prow")
+	ship.visual_upgrades = data.upgrades.duplicate(true)
 	ship.resize_hull(HULLS[data.hull].size)

@@ -20,3 +20,5 @@ extends Resource
 @export var linear_progression: bool = false
 @export var stage: int = 0
 @export var relief: int = 0
+
+@export var weather: String = "calm"

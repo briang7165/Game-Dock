@@ -92,3 +92,9 @@ Use the M2-E PR's linked playable Windows artifact. Close Broadside and replace 
 ## M2-F update (0.2.5-m2f)
 
 Download the M2-F PR's successful Windows artifact. Extract its wrapper and inner game ZIP. Close Broadside, then replace Broadside.exe, Broadside.pck and game.json together in Game Dock's existing games/broadside folder and refresh. Keep %APPDATA%/Broadside untouched; no new campaign or Godot installation is required. Underway older battles retain their old rules until completed, then follow the new automatic progression. Back up saves and retain the older three game files for rollback.
+
+## M2-G update (0.2.6-m2g)
+
+Download the M2-G pull request's successful **broadside-windows-x64** artifact, extract the wrapper and the versioned game ZIP, and use the existing installation helper or replace the three matching files in Game Dock's current `games/broadside` folder. The ZIP contract is unchanged: `Broadside.exe`, `Broadside.pck`, and `game.json` at the root. Do not delete `%APPDATA%/Broadside` or start a new campaign. Ships, fittings, captain names, currency and voyage progress remain saved.
+
+Selecting an unowned Fleet card now opens its purchase estimate directly. Confirm buys it once; selecting an owned ship offers Make Active in the pinned panel. Generic equipment slots are gone. Individual fitting tiers and cannon capacities still apply. Full test details and manual-playtest limits are in [M2-G validation](BROADSIDE_M2G_TEST_RESULTS.md).
